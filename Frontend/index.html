@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Home Hub | Command Center</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* Base Styles & Texture */
+        .bg-microgrid { background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px); background-size: 24px 24px; }
+        .glow-cyan { box-shadow: 0 0 20px 5px rgba(6, 182, 212, 0.3); border-color: #06b6d4; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; } .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* 🚁 DYNAMIC FAN ANIMATION */
+        @keyframes spin-fan { 100% { transform: rotate(360deg); } }
+        .animate-fan { animation: spin-fan linear infinite; }
+        .fan-stopped { animation: none !important; }
+        .fan-blade { fill: #374151; transition: fill 0.4s ease; }
+        .fan-on .fan-blade { fill: #60a5fa; filter: drop-shadow(0 0 8px rgba(96,165,250,0.5)); }
+
+        /* 🌬️ DYNAMIC AC ANIMATION */
+        .ac-on { fill: #22d3ee !important; filter: drop-shadow(0 0 15px rgba(34, 211, 238, 0.8)); transition: all 0.4s ease; }
+        .air-wave { stroke: #22d3ee; opacity: 0; transform: translateY(-10px); transition: all 0.4s ease; }
+        .air-wave-on { opacity: 0.6; transform: translateY(0); animation: pulse-air 2s infinite ease-in-out; }
+        @keyframes pulse-air { 0% { opacity: 0.1; } 50% { opacity: 0.8; } 100% { opacity: 0.1; } }
+
+        /* 🔥 DYNAMIC HEATER ANIMATION */
+        .heater-on { fill: #ef4444 !important; filter: drop-shadow(0 0 15px rgba(239, 68, 68, 0.8)); transition: all 0.4s ease; }
+        .heat-wave { stroke: #ef4444; fill: none; stroke-width: 3; stroke-linecap: round; opacity: 0; transform: translateY(10px); transition: all 0.4s ease; }
+        .heat-wave-on { opacity: 0.8; transform: translateY(0); animation: float-heat 1.5s infinite ease-in-out alternate; }
+        @keyframes float-heat { 0% { transform: translateY(0px); opacity: 0.4; } 100% { transform: translateY(-5px); opacity: 0.9; } }
+
+        /* 🍃 AIR PURIFIER ANIMATION */
+        .purifier-on { fill: #4ade80 !important; filter: drop-shadow(0 0 15px rgba(74, 222, 128, 0.8)); transition: all 0.4s ease; }
+        .pure-ring { stroke: #4ade80; fill: transparent; stroke-width: 2; opacity: 0; transform-origin: 430px 180px; transition: all 0.4s ease; }
+        .pure-ring-on { animation: pulse-ring-pure 3s infinite ease-out; }
+        .pure-ring-on:nth-child(2) { animation-delay: 1s; }
+        .pure-ring-on:nth-child(3) { animation-delay: 2s; }
+        @keyframes pulse-ring-pure { 0% { transform: scale(0.3); opacity: 0.8; stroke-width: 4px; } 100% { transform: scale(3.5); opacity: 0; stroke-width: 1px; } }
+
+        @keyframes spin-slow { 100% { transform: rotate(360deg); } }
+        .animate-spin-slow { animation: spin-slow 8s linear infinite; }
+        input[type=range] { accent-color: #3b82f6; }
+        .ac-slider { accent-color: #06b6d4 !important; }
+
+        /* SPATIAL UI STYLES */
+        .room-zone { fill: transparent; stroke: #6b7280; stroke-width: 4; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
+        .room-zone:hover { fill: rgba(255, 255, 255, 0.05); stroke: #9ca3af; }
+        .room-label { fill: #9ca3af; font-family: sans-serif; font-size: 16px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; pointer-events: none; transition: all 0.4s ease; }
+        .room-on-living { fill: rgba(250, 204, 21, 0.15) !important; stroke: #facc15 !important; filter: drop-shadow(0 0 15px rgba(250, 204, 21, 0.3)); }
+        .room-on-bedroom { fill: rgba(168, 85, 247, 0.15) !important; stroke: #a855f7 !important; filter: drop-shadow(0 0 15px rgba(168, 85, 247, 0.3)); }
+        .room-on-kitchen { fill: rgba(6, 182, 212, 0.15) !important; stroke: #06b6d4 !important; filter: drop-shadow(0 0 15px rgba(6, 182, 212, 0.3)); }
+        .room-on-bathroom { fill: rgba(59, 130, 246, 0.15) !important; stroke: #3b82f6 !important; filter: drop-shadow(0 0 15px rgba(59, 130, 246, 0.3)); }
+        .label-on { fill: #ffffff !important; }
+
+        /* MEDIA DEVICES */
+        .device-off { fill: #374151; cursor: pointer; transition: all 0.4s ease; }
+        .device-off:hover { fill: #4b5563; }
+        .tv-on { fill: #60a5fa; cursor: pointer; filter: drop-shadow(0 0 15px rgba(96, 165, 250, 0.8)); transition: all 0.4s ease; }
+        .led-on { fill: #f43f5e; cursor: pointer; filter: drop-shadow(0 0 15px rgba(244, 63, 94, 0.8)); transition: all 0.4s ease; }
+        
+        /* 🪟 TRUE PHYSICS SHADE & SUNLIGHT ANIMATIONS */
+        .window-glass { fill: #1f2937; transition: all 0.8s ease; }
+        .win-open { fill: #fef08a !important; filter: drop-shadow(0 0 15px rgba(253,224,71,0.6)); }
+        .sunbeam { opacity: 0; pointer-events: none; transition: opacity 1.5s ease-in-out; mix-blend-mode: screen; }
+        .sunbeam-on { opacity: 0.35; }
+        .shade-vertical { transition: height 1.2s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; fill: #111827; }
+        .shade-horizontal { transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; fill: #111827; }
+        .shade-vertical:hover, .shade-horizontal:hover { fill: #374151; }
+        .shade-v-open { height: 12px !important; } 
+        .shade-h-open { width: 12px !important; }
+
+        @keyframes pulse-ring { 0% { transform: scale(0.8); opacity: 0.8; } 100% { transform: scale(1.8); opacity: 0; } }
+        .mic-listening::before { content: ''; position: absolute; left: 0; top: 0; width: 100%; height: 100%; background-color: #3b82f6; border-radius: 50%; z-index: -1; animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite; }
+    </style>
+</head>
+<body id="main-body" class="bg-gray-950 text-white min-h-screen p-4 md:p-8 font-sans selection:bg-blue-500 relative pb-20 overflow-x-hidden transition-colors duration-1000 bg-microgrid">
+
+    <!-- ✨ AMBIENT ENERGY AURAS -->
+    <div id="aura-1" class="fixed top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-cyan-600 rounded-full blur-[120px] pointer-events-none z-[-1] transition-all duration-1000 opacity-20"></div>
+    <div id="aura-2" class="fixed bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-yellow-500 rounded-full blur-[120px] pointer-events-none z-[-1] transition-all duration-1000 opacity-20"></div>
+
+    <!-- 🚨 ECO-GUARD TOAST -->
+    <div id="eco-toast" class="fixed top-6 left-1/2 transform -translate-x-1/2 bg-rose-600/95 text-white px-6 py-4 rounded-2xl shadow-[0_0_30px_rgba(225,29,72,0.5)] flex items-center space-x-4 z-[100] transition-all duration-500 -translate-y-32 opacity-0 pointer-events-none border border-rose-400 backdrop-blur-md w-max max-w-[90vw]">
+        <svg class="w-8 h-8 animate-pulse text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+        <div><p class="font-bold text-sm tracking-wider uppercase">Eco-Guard Warning</p><p id="eco-toast-msg" class="text-sm text-rose-100 mt-0.5">Energy waste detected.</p></div>
+    </div>
+
+    <!-- 🚨 ECO-GUARD ANOMALY BANNER (Hidden by default) -->
+    <div id="eco-guard-alert" class="hidden bg-red-600/90 border border-red-400 text-white px-6 py-4 rounded-xl shadow-2xl mb-6 flex items-center justify-between transition-all duration-300">
+        <div class="flex items-center gap-3">
+            <span class="text-3xl animate-pulse">⚠️</span>
+            <div>
+                <h3 class="font-bold text-lg">Eco-Guard Alert: Power Anomaly Detected!</h3>
+                <p class="text-sm text-red-100">Unusual energy draw identified. Please turn off unnecessary appliances to prevent grid strain.</p>
+            </div>
+        </div>
+        <div class="text-right">
+            <div class="text-xs text-red-200 uppercase tracking-wider font-bold">Current Draw</div>
+            <div id="alert-watts" class="text-2xl font-mono font-bold">0 W</div>
+        </div>
+    </div>
+
+    <!-- 🎙️ VOICE ASSISTANT -->
+    <div class="fixed bottom-8 right-8 z-50 flex flex-col items-end space-y-3">
+        <div id="voice-transcript" class="bg-gray-800 text-gray-200 px-5 py-3 rounded-2xl text-sm shadow-xl border border-gray-700 opacity-0 transition-all duration-300 pointer-events-none transform translate-y-2 font-medium">Listening...</div>
+        <button id="mic-btn" onclick="toggleVoiceAssistant()" class="relative w-16 h-16 bg-gray-800/90 hover:bg-gray-700 backdrop-blur-xl rounded-full shadow-2xl flex items-center justify-center transition-colors border border-white/10"><svg id="mic-icon" class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg></button>
+    </div>
+
+    <!-- HEADER -->
+    <header class="mb-8 text-center max-w-[1400px] mx-auto flex items-center justify-between">
+        <div class="text-left"><h1 class="text-3xl font-bold tracking-tight text-gray-100 drop-shadow-md">Microgrid Hub</h1><p class="text-gray-400 mt-1">Command Center UI</p></div>
+        <div class="hidden md:flex items-center space-x-2"><span class="relative flex h-3 w-3"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span></span><span class="text-sm text-gray-300 font-mono">System Nominal</span></div>
+    </header>
+
+    <!-- 🎛️ MAIN COMMAND CENTER GRID -->
+    <div class="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- ========================================== -->
+        <!-- COLUMN 1: LEFT PERIPHERAL (ENERGY TELEMETRY) -->
+        <!-- ========================================== -->
+        <div class="lg:col-span-3 flex flex-col space-y-6">
+            <h3 class="text-xs text-gray-400 uppercase tracking-widest font-semibold pl-1">Solar Engine</h3>
+            <div class="bg-gray-900/40 backdrop-blur-xl border border-white/10 shadow-lg rounded-2xl p-5"><p class="text-sm text-gray-400 uppercase tracking-wide mb-1">House Load</p><p class="text-3xl font-light text-white"><span id="power-draw">0</span><span class="text-base text-gray-500 ml-1">W</span></p></div>
+            <div class="bg-gray-900/40 backdrop-blur-xl border border-yellow-500/30 shadow-[inset_0_0_20px_rgba(250,204,21,0.05)] rounded-2xl p-5 relative overflow-hidden"><div class="absolute -top-10 -right-10 w-32 h-32 bg-yellow-500/20 blur-3xl rounded-full"></div><div class="relative z-10"><p class="text-sm text-yellow-500 uppercase tracking-wide mb-1 flex items-center"><svg class="w-4 h-4 mr-1 animate-spin-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>Solar Yield</p><p class="text-3xl font-light text-yellow-400"><span id="solar-yield">0</span><span class="text-base text-yellow-600 ml-1">W</span></p></div></div>
+            <div class="bg-gray-900/40 backdrop-blur-xl border border-white/10 shadow-lg rounded-2xl p-5 flex flex-col justify-center"><p class="text-sm text-gray-400 uppercase tracking-wide mb-1">Grid Exchange</p><div class="flex items-end space-x-2"><p class="text-2xl font-medium" id="grid-status-text">Calculating...</p><p class="text-sm text-gray-500 mb-1"><span id="grid-power">0</span> W</p></div></div>
+            <div class="bg-gray-900/40 backdrop-blur-xl border border-white/10 shadow-lg rounded-2xl p-5">
+                <p class="text-sm text-gray-400 uppercase tracking-wide mb-3">Load Distribution</p>
+                <div class="w-full h-3 bg-gray-800 rounded-full flex overflow-hidden mb-3">
+                    <div id="bar-ac" class="h-full bg-cyan-500 transition-all duration-700" style="width: 0%"></div>
+                    <div id="bar-heater" class="h-full bg-red-500 transition-all duration-700" style="width: 0%"></div>
+                    <div id="bar-fans" class="h-full bg-blue-500 transition-all duration-700" style="width: 0%"></div>
+                    <div id="bar-purifier" class="h-full bg-green-400 transition-all duration-700" style="width: 0%"></div>
+                    <div id="bar-media" class="h-full bg-purple-500 transition-all duration-700" style="width: 0%"></div>
+                    <div id="bar-lights" class="h-full bg-yellow-400 transition-all duration-700" style="width: 0%"></div>
+                </div>
+                <div class="flex flex-wrap gap-2 text-[10px] text-gray-400 font-mono">
+                    <span class="bg-gray-800/50 px-2 py-1 rounded">AC: <span id="pct-ac" class="text-cyan-400">0</span>%</span>
+                    <span class="bg-gray-800/50 px-2 py-1 rounded border border-red-500/30">Heat: <span id="pct-heater" class="text-red-400">0</span>%</span>
+                    <span class="bg-gray-800/50 px-2 py-1 rounded">Fan: <span id="pct-fans" class="text-blue-400">0</span>%</span>
+                    <span class="bg-gray-800/50 px-2 py-1 rounded">Air: <span id="pct-purifier" class="text-green-400">0</span>%</span>
+                    <span class="bg-gray-800/50 px-2 py-1 rounded">TV: <span id="pct-media" class="text-purple-400">0</span>%</span>
+                    <span class="bg-gray-800/50 px-2 py-1 rounded">Lgt: <span id="pct-lights" class="text-yellow-400">0</span>%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- COLUMN 2: CENTER FOCUS (THE DIGITAL TWIN)  -->
+        <!-- ========================================== -->
+        <div class="lg:col-span-6 flex flex-col space-y-6">
+            
+            <!-- 🌡️ REBUILT: TWO-ROW DASHBOARD BAR -->
+            <div class="bg-gray-900/40 backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-lg flex flex-col gap-4">
+                
+                <!-- ROW 1: TELEMETRY -->
+                <div class="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-4">
+                    <!-- Location & Time -->
+                    <div class="flex flex-col flex-1 min-w-[120px]">
+                        <p class="text-[10px] text-gray-400 uppercase tracking-widest font-bold mb-1">Magdeburg, DE</p>
+                        <p id="live-time" class="text-xl font-bold text-gray-100 tracking-wider">--:--</p>
+                    </div>
+                    
+                    <!-- Temp Out/In -->
+                    <div class="flex flex-col flex-1 min-w-[150px] border-l border-white/10 pl-4 sm:pl-6">
+                        <p class="text-[10px] text-gray-400 uppercase tracking-widest font-bold mb-1">Temp (Out | In)</p>
+                        <div class="flex items-center space-x-2 text-xl font-bold">
+                            <span id="env-temp-out" class="text-yellow-400">--.-°C</span>
+                            <span class="text-gray-600 font-light">|</span>
+                            <span id="env-temp-in" class="text-cyan-400">--.-°C</span>
+                        </div>
+                    </div>
+                    
+                    <!-- AQI Out/In -->
+                    <div class="flex flex-col flex-1 min-w-[120px] border-l border-white/10 pl-4 sm:pl-6">
+                        <p class="text-[10px] text-gray-400 uppercase tracking-widest font-bold mb-1">AQI (Out | In)</p>
+                        <div class="flex items-center space-x-2 text-xl font-bold">
+                            <span id="env-aqi-out" class="text-yellow-400">--</span>
+                            <span class="text-gray-600 font-light">|</span>
+                            <span id="env-aqi-in" class="text-green-400">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ROW 2: SCENES (MODES) -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <button id="btn-scene-movie" onclick="activateScene('movie')" class="bg-gray-900/60 border border-white/10 hover:bg-gray-800/80 px-4 py-3 rounded-xl text-sm font-semibold transition duration-300 flex items-center justify-center space-x-2 shadow-sm w-full"><span>🍿</span><span>Movie</span></button>
+                    <button id="btn-scene-night" onclick="activateScene('night')" class="bg-gray-900/60 border border-white/10 hover:bg-gray-800/80 px-4 py-3 rounded-xl text-sm font-semibold transition duration-300 flex items-center justify-center space-x-2 shadow-sm w-full"><span>🌙</span><span>Night</span></button>
+                    <button id="btn-scene-away" onclick="activateScene('away')" class="bg-gray-900/60 border border-white/10 hover:bg-gray-800/80 px-4 py-3 rounded-xl text-sm font-semibold transition duration-300 flex items-center justify-center space-x-2 shadow-sm w-full"><span>🏃‍♂️</span><span>Away</span></button>
+                    <button id="btn-scene-morning" onclick="activateScene('morning')" class="bg-gray-900/60 border border-white/10 hover:bg-gray-800/80 px-4 py-3 rounded-xl text-sm font-semibold transition duration-300 flex items-center justify-center space-x-2 shadow-sm w-full"><span>🌅</span><span>Morning</span></button>
+                </div>
+
+            </div>
+
+            <!-- The Spatial Map -->
+            <div class="bg-gray-900/40 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-2xl p-6 relative flex items-center justify-center flex-1 min-h-[400px]">
+                <h2 class="text-xs text-gray-400 uppercase tracking-widest font-semibold absolute top-6 left-6">Spatial Digital Twin</h2>
+                <svg viewBox="0 0 800 500" class="w-full h-auto mt-4 drop-shadow-2xl">
+                    <defs>
+                        <linearGradient id="sunLight-Living" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#fde047" stop-opacity="0.9" /><stop offset="100%" stop-color="#fde047" stop-opacity="0" /></linearGradient>
+                        <linearGradient id="sunLight-Kitchen" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#fde047" stop-opacity="0.9" /><stop offset="100%" stop-color="#fde047" stop-opacity="0" /></linearGradient>
+                        <linearGradient id="sunLight-Bedroom" x1="100%" y1="0%" x2="0%" y2="0%"><stop offset="0%" stop-color="#fde047" stop-opacity="0.9" /><stop offset="100%" stop-color="#fde047" stop-opacity="0" /></linearGradient>
+                    </defs>
+                    <rect x="20" y="20" width="760" height="460" fill="none" stroke="#4b5563" stroke-width="8" rx="10" />
+                    <polygon id="beam-living" points="20,100 300,120 300,280 20,300" fill="url(#sunLight-Living)" class="sunbeam" />
+                    <polygon id="beam-kitchen" points="550,20 530,160 720,160 700,20" fill="url(#sunLight-Kitchen)" class="sunbeam" />
+                    <polygon id="beam-bedroom" points="780,350 500,370 500,430 780,450" fill="url(#sunLight-Bedroom)" class="sunbeam" />
+                    <rect id="room-living" x="20" y="20" width="460" height="460" class="room-zone" onclick="toggleRoom('living')" rx="6" />
+                    <text id="label-living" x="100" y="450" text-anchor="middle" class="room-label">Living Room</text>
+                    <rect id="room-kitchen" x="480" y="20" width="300" height="200" class="room-zone" onclick="toggleRoom('kitchen')" rx="6" />
+                    <text id="label-kitchen" x="630" y="125" text-anchor="middle" class="room-label">Kitchen</text>
+                    <rect id="room-bathroom" x="480" y="220" width="300" height="100" class="room-zone" onclick="toggleRoom('bathroom')" rx="6" />
+                    <text id="label-bathroom" x="630" y="275" text-anchor="middle" class="room-label">Bath</text>
+                    <rect id="room-bedroom" x="480" y="320" width="300" height="160" class="room-zone" onclick="toggleRoom('bedroom')" rx="6" />
+                    <text id="label-bedroom" x="630" y="405" text-anchor="middle" class="room-label">Master Bed</text>
+                    <rect id="glass-living" x="12" y="100" width="8" height="200" class="window-glass" />
+                    <rect id="glass-kitchen" x="550" y="12" width="150" height="8" class="window-glass" />
+                    <rect id="glass-bedroom" x="780" y="350" width="8" height="100" class="window-glass" />
+                    <rect id="win-living" x="12" y="100" width="8" height="200" class="shade-vertical" onclick="document.getElementById('toggle-curtain-living').click()" /> 
+                    <rect id="win-kitchen" x="550" y="12" width="150" height="8" class="shade-horizontal" onclick="document.getElementById('toggle-curtain-kitchen').click()" /> 
+                    <rect id="win-bedroom" x="780" y="350" width="8" height="100" class="shade-vertical" onclick="document.getElementById('toggle-curtain-bedroom').click()" /> 
+                    <rect id="device-tv" x="35" y="150" width="12" height="120" class="device-off" onclick="toggleTV()" rx="4" />
+                    <text id="label-tv" x="70" y="215" text-anchor="middle" class="room-label pointer-events-none" style="font-size: 11px;">TV</text>
+                    <rect id="device-movielight" x="130" y="35" width="240" height="8" class="device-off" onclick="toggleMovieLight()" rx="4" />
+                    <text id="label-led" x="250" y="65" text-anchor="middle" class="room-label pointer-events-none" style="font-size: 11px;">LED STRIP</text>
+                    
+                    <!-- Living AC -->
+                    <rect id="visual-ac" x="350" y="15" width="90" height="14" class="device-off" rx="3" />
+                    <path id="ac-wave-1" d="M370 35 Q 395 55 370 75" fill="none" stroke-width="3" stroke-linecap="round" class="air-wave" />
+                    <path id="ac-wave-2" d="M395 35 Q 420 55 395 75" fill="none" stroke-width="3" stroke-linecap="round" class="air-wave" />
+                    <path id="ac-wave-3" d="M420 35 Q 445 55 420 75" fill="none" stroke-width="3" stroke-linecap="round" class="air-wave" />
+                    
+                    <!-- Bedroom AC -->
+                    <rect id="visual-ac-bed" x="550" y="325" width="70" height="12" class="device-off" rx="2" />
+                    <path id="ac-wave-bed-1" d="M565 340 Q 580 355 565 370" fill="none" stroke-width="2" stroke-linecap="round" class="air-wave" />
+                    <path id="ac-wave-bed-2" d="M585 340 Q 600 355 585 370" fill="none" stroke-width="2" stroke-linecap="round" class="air-wave" />
+                    <path id="ac-wave-bed-3" d="M605 340 Q 620 355 605 370" fill="none" stroke-width="2" stroke-linecap="round" class="air-wave" />
+
+                    <!-- 🔥 Living Room Heater -->
+                    <rect id="visual-heat-living" x="420" y="420" width="20" height="30" class="device-off" rx="3" />
+                    <path id="heat-wave-living-1" d="M425 415 Q 430 405 425 395" class="heat-wave" />
+                    <path id="heat-wave-living-2" d="M435 415 Q 430 405 435 395" class="heat-wave" />
+                    
+                    <!-- 🔥 Kitchen Heater -->
+                    <rect id="visual-heat-kitchen" x="740" y="160" width="20" height="30" class="device-off" rx="3" />
+                    <path id="heat-wave-kitchen-1" d="M745 155 Q 750 145 745 135" class="heat-wave" />
+                    <path id="heat-wave-kitchen-2" d="M755 155 Q 750 145 755 135" class="heat-wave" />
+
+                    <!-- 🔥 Bedroom Heater -->
+                    <rect id="visual-heat-bed" x="740" y="430" width="20" height="30" class="device-off" rx="3" />
+                    <path id="heat-wave-bed-1" d="M745 425 Q 750 415 745 405" class="heat-wave" />
+                    <path id="heat-wave-bed-2" d="M755 425 Q 750 415 755 405" class="heat-wave" />
+
+                    <!-- Fan -->
+                    <g id="visual-fan" class="fan-stopped" style="transform-origin: 250px 250px;">
+                        <circle cx="250" cy="250" r="45" fill="transparent" stroke="#4b5563" stroke-width="1" stroke-dasharray="4 4" />
+                        <path class="fan-blade" d="M245 200 h10 v50 h-10 z" /> 
+                        <path class="fan-blade" d="M245 250 h10 v50 h-10 z" /> 
+                        <path class="fan-blade" d="M200 245 h50 v10 h-50 z" /> 
+                        <path class="fan-blade" d="M250 245 h50 v10 h-50 z" /> 
+                        <circle cx="250" cy="250" r="14" fill="#374151" stroke="#6b7280" stroke-width="2" />
+                    </g>
+                    <text x="250" y="320" text-anchor="middle" class="room-label pointer-events-none" style="font-size: 11px;">FAN</text>
+                    
+                    <!-- Purifier -->
+                    <g id="visual-purifier" style="transform-origin: 430px 180px;">
+                        <circle class="pure-ring" cx="430" cy="180" r="15" />
+                        <circle class="pure-ring" cx="430" cy="180" r="15" />
+                        <circle class="pure-ring" cx="430" cy="180" r="15" />
+                        <rect id="purifier-core" x="415" y="165" width="30" height="30" rx="8" class="device-off" onclick="document.getElementById('purifier-toggle').click()" />
+                        <circle cx="430" cy="180" r="8" fill="#1f2937" class="pointer-events-none" />
+                    </g>
+                    <text x="430" y="215" text-anchor="middle" class="room-label pointer-events-none" style="font-size: 10px;">AIRQ</text>
+                </svg>
+            </div>
+
+            <div class="bg-gray-800/50 backdrop-blur-md border border-gray-700 p-6 rounded-2xl shadow-xl mt-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                            🧠 AI Energy Forecast
+                        </h2>
+                        <span class="text-xs font-mono bg-cyan-500/20 text-cyan-400 px-2 py-1 rounded-full border border-cyan-500/30">
+                            Prophet ML
+                        </span>
+                    </div>
+                
+                    <div class="relative h-64 w-full">
+                        <canvas id="forecastChart"></canvas>
+                    </div>
+            </div>
+
+            <!-- Analytics Chart -->
+            <div class="bg-gray-900/40 backdrop-blur-xl border border-white/10 shadow-lg rounded-2xl p-6">
+                <h2 class="text-sm font-bold mb-4 flex items-center text-gray-100"><svg class="w-4 h-4 mr-2 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>7-Day Energy Analytics (kWh)</h2>
+                <div class="w-full h-40 relative"><canvas id="energyChart"></canvas></div>
+            </div>
+
+        </div>
+
+        <!-- ========================================== -->
+        <!-- COLUMN 3: RIGHT PERIPHERAL (CONTROLS)      -->
+        <!-- ========================================== -->
+        <div class="lg:col-span-3 flex flex-col space-y-6">
+            <h3 class="text-xs text-gray-400 uppercase tracking-widest font-semibold pl-1">Hardware Control</h3>
+
+            <!-- 🪟 Motorized Shades Panel -->
+            <div id="card-shades" class="bg-gray-900/40 backdrop-blur-xl rounded-2xl p-6 border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] transition-all duration-300">
+                <h2 class="text-lg font-bold mb-4 text-gray-100">Motorized Shades</h2>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <div><p class="text-sm font-medium text-gray-200">Living Room</p><p id="status-curtain-living" class="text-xs text-gray-400">Closed</p></div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="toggle-curtain-living" class="sr-only peer" onchange="operateCurtain('living', this.checked ? 'OPEN' : 'CLOSE')">
+                            <div class="w-10 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-yellow-400 shadow-inner"></div>
+                        </label>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <div><p class="text-sm font-medium text-gray-200">Kitchen</p><p id="status-curtain-kitchen" class="text-xs text-gray-400">Closed</p></div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="toggle-curtain-kitchen" class="sr-only peer" onchange="operateCurtain('kitchen', this.checked ? 'OPEN' : 'CLOSE')">
+                            <div class="w-10 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-yellow-400 shadow-inner"></div>
+                        </label>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <div><p class="text-sm font-medium text-gray-200">Master Bed</p><p id="status-curtain-bedroom" class="text-xs text-gray-400">Closed</p></div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="toggle-curtain-bedroom" class="sr-only peer" onchange="operateCurtain('bedroom', this.checked ? 'OPEN' : 'CLOSE')">
+                            <div class="w-10 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-yellow-400 shadow-inner"></div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 🌡️ Zoned Climate System Panel -->
+            <div id="card-ac1" class="bg-gray-900/40 backdrop-blur-xl rounded-2xl p-6 border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] transition-all duration-300 flex-1">
+                <div class="flex justify-between items-center mb-4"><h2 class="text-lg font-bold text-gray-100">Climate Zones</h2></div>
+                <div class="bg-gray-800/40 rounded-xl p-4 mb-4 border border-white/5 flex flex-col space-y-4">
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center space-x-4">
+                            <span class="text-sm font-medium text-gray-200 w-20">Living AC</span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="ac-power-toggle" class="sr-only peer" onchange="toggleAC(this.checked ? 'ON' : 'OFF')">
+                                <div class="w-10 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-500 shadow-inner"></div>
+                            </label>
+                        </div>
+                        <div class="flex items-center space-x-2 bg-gray-900/50 p-1 rounded-lg border border-white/5">
+                            <button onclick="adjustTempLiving(-1)" class="w-6 h-6 rounded bg-gray-700 hover:bg-gray-600 flex items-center justify-center text-sm font-bold transition shadow-sm">-</button>
+                            <div class="text-sm font-light w-8 text-center text-gray-100"><span id="temp-living">22</span>°</div>
+                            <button onclick="adjustTempLiving(1)" class="w-6 h-6 rounded bg-gray-700 hover:bg-gray-600 flex items-center justify-center text-sm font-bold transition shadow-sm">+</button>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center space-x-4">
+                            <span class="text-sm font-medium text-gray-200 w-20">Bed AC</span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="ac-bed-toggle" class="sr-only peer" onchange="toggleACBed(this.checked ? 'ON' : 'OFF')">
+                                <div class="w-10 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-500 shadow-inner"></div>
+                            </label>
+                        </div>
+                        <div class="flex items-center space-x-2 bg-gray-900/50 p-1 rounded-lg border border-white/5">
+                            <button onclick="adjustTempBed(-1)" class="w-6 h-6 rounded bg-gray-700 hover:bg-gray-600 flex items-center justify-center text-sm font-bold transition shadow-sm">-</button>
+                            <div class="text-sm font-light w-8 text-center text-gray-100"><span id="temp-bed">22</span>°</div>
+                            <button onclick="adjustTempBed(1)" class="w-6 h-6 rounded bg-gray-700 hover:bg-gray-600 flex items-center justify-center text-sm font-bold transition shadow-sm">+</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 🔥 NEW: SPACE HEATERS SECTION -->
+                <div class="bg-gray-800/40 rounded-xl p-4 mb-6 border border-white/5 flex flex-col space-y-3">
+                    <p class="text-[10px] text-red-400 uppercase tracking-widest font-bold mb-1 border-b border-white/10 pb-2">♨️ Space Heaters (2kW)</p>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium text-gray-200">Living Room</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="heater-living-toggle" class="sr-only peer" onchange="toggleHeater('living', this.checked)">
+                            <div class="w-10 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-red-500 shadow-inner"></div>
+                        </label>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium text-gray-200">Kitchen</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="heater-kitchen-toggle" class="sr-only peer" onchange="toggleHeater('kitchen', this.checked)">
+                            <div class="w-10 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-red-500 shadow-inner"></div>
+                        </label>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium text-gray-200">Master Bed</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="heater-bed-toggle" class="sr-only peer" onchange="toggleHeater('bedroom', this.checked)">
+                            <div class="w-10 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-red-500 shadow-inner"></div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center mb-1"><p class="text-xs text-blue-400 uppercase font-semibold">Ceiling Fan</p><p id="status-fan1" class="text-xs text-gray-400 font-mono bg-gray-800/50 px-2 py-0.5 rounded">Speed: 0</p></div>
+                <input type="range" min="0" max="5" value="0" id="fan-slider" class="w-full cursor-pointer ac-slider mb-6" onchange="updateFanSpeed(this.value)">
+                
+                <div class="flex items-center justify-between bg-gray-800/40 rounded-lg p-3 border border-white/5 mt-2 shadow-inner">
+                    <div class="flex items-center space-x-2"><svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg><span class="text-sm font-medium text-gray-200">Air Purifier</span></div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="purifier-toggle" class="sr-only peer" onchange="togglePurifier(this.checked)">
+                        <div class="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500 shadow-inner"></div>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- --- APP LOGIC --- -->
+    <script>
+        let currentActiveScene = null;
+        let acPower = false; let acBedPower = false; 
+        let tempLiving = 22; let tempBed = 22; 
+        let purifierPower = false; let currentFanSpeed = 0; let acAirflowLevel = 0;
+        let roomStates = { living: false, bedroom: false, kitchen: false, bathroom: false };
+        let curtainStates = { living: false, kitchen: false, bedroom: false };
+        // 🔥 NEW: Tracker for heaters
+        let heaterStates = { living: false, kitchen: false, bedroom: false };
+        let tvPower = false; let movieLightPower = false;
+        let forecastChart = null;
+        
+        // 🌍 ENVIRONMENTAL PHYSICS
+        let outsideTemp = 24.0; let indoorTemp = 22.4;
+        let outsideAQI = 45; let indoorAQI = 35;
+        let liveCloudCover = 0; 
+
+        // 🚨 ECO-GUARD LOGIC 
+        let ecoToastTimeout;
+        function showEcoWarning(msg) {
+            const toast = document.getElementById('eco-toast'); document.getElementById('eco-toast-msg').innerText = msg;
+            toast.classList.remove('-translate-y-32', 'opacity-0'); toast.classList.add('translate-y-0', 'opacity-100');
+            clearTimeout(ecoToastTimeout);
+            ecoToastTimeout = setTimeout(() => { toast.classList.remove('translate-y-0', 'opacity-100'); toast.classList.add('-translate-y-32', 'opacity-0'); }, 4500);
+        }
+
+        // ✨ SCENE AMBIENT LIGHTING
+        function updateAmbientLighting(scene) {
+            const body = document.getElementById('main-body'); const aura1 = document.getElementById('aura-1'); const aura2 = document.getElementById('aura-2');
+            body.className = "bg-gray-950 text-white min-h-screen p-4 md:p-8 font-sans selection:bg-blue-500 relative pb-20 overflow-x-hidden transition-colors duration-1000 bg-microgrid";
+            aura1.className = "fixed top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full blur-[120px] pointer-events-none z-[-1] transition-all duration-1000";
+            aura2.className = "fixed bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] rounded-full blur-[120px] pointer-events-none z-[-1] transition-all duration-1000";
+            if (!scene) { aura1.classList.add('bg-cyan-600', 'opacity-20'); aura2.classList.add('bg-yellow-500', 'opacity-20'); } 
+            else if (scene === 'movie') { body.classList.replace('bg-gray-950', 'bg-indigo-950'); aura1.classList.add('bg-purple-600', 'opacity-40'); aura2.classList.add('bg-indigo-600', 'opacity-40'); } 
+            else if (scene === 'night') { body.classList.replace('bg-gray-950', 'bg-black'); aura1.classList.add('bg-blue-900', 'opacity-30'); aura2.classList.add('bg-transparent', 'opacity-0'); } 
+            else if (scene === 'morning') { aura1.classList.add('bg-orange-500', 'opacity-30'); aura2.classList.add('bg-yellow-400', 'opacity-30'); } 
+            else if (scene === 'away') { body.classList.replace('bg-gray-950', 'bg-black'); aura1.classList.add('bg-transparent', 'opacity-0'); aura2.classList.add('bg-transparent', 'opacity-0'); }
+        }
+
+        // 🎙️ VOICE AI
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition; let isListening = false;
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition(); recognition.continuous = false; recognition.interimResults = false; recognition.lang = 'en-US';
+            recognition.onstart = function() {
+                isListening = true; const btn = document.getElementById('mic-btn'); const icon = document.getElementById('mic-icon'); const transcript = document.getElementById('voice-transcript');
+                btn.classList.replace('bg-gray-800/90', 'bg-blue-600'); btn.classList.add('mic-listening', 'border-blue-400'); icon.classList.replace('text-blue-400', 'text-white');
+                transcript.innerText = "Listening..."; transcript.classList.remove('opacity-0', 'translate-y-2');
+            };
+            recognition.onresult = function(event) { processVoiceCommand(event.results[0][0].transcript.toLowerCase()); };
+            recognition.onend = function() {
+                isListening = false; const btn = document.getElementById('mic-btn'); const icon = document.getElementById('mic-icon'); const transcript = document.getElementById('voice-transcript');
+                btn.classList.replace('bg-blue-600', 'bg-gray-800/90'); btn.classList.remove('mic-listening', 'border-blue-400'); icon.classList.replace('text-white', 'text-blue-400');
+                setTimeout(() => { transcript.classList.add('opacity-0', 'translate-y-2'); }, 3000);
+            };
+        }
+        function toggleVoiceAssistant() { if (!recognition) return alert("Use Chrome/Edge for Voice."); if (isListening) recognition.stop(); else recognition.start(); }
+
+        async function processVoiceCommand(text) {
+            // Update UI to show we are thinking
+            document.getElementById('voice-transcript').innerText = `🗣️ "${text}" ... 🧠 Thinking...`;
+            document.getElementById('voice-transcript').classList.remove('opacity-0', 'translate-y-2');
+            
+            // 1. Gather the absolute LIVE state of the entire Digital Twin
+            const currentHouseState = {
+                total_power_draw_watts: document.getElementById('power-draw').innerText,
+                solar_yield_watts: document.getElementById('solar-yield').innerText,
+                indoor_temperature: indoorTemp.toFixed(1) + " C",
+                rooms_occupied: roomStates,
+                heaters_on: heaterStates,
+                living_ac_on: acPower,
+                bedroom_ac_on: acBedPower,
+                eco_guard_warning_active: !document.getElementById('eco-guard-alert').classList.contains('hidden')
+            };
+
+            try {
+                // 2. Send the question and the data to the Python Backend
+                const res = await fetch('http://localhost:8000/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        transcript: text, 
+                        house_state: currentHouseState 
+                    })
+                });
+                
+                const data = await res.json();
+                const aiReply = data.reply;
+                
+                // 3. Display the answer on screen
+                document.getElementById('voice-transcript').innerText = `🤖 ${aiReply}`;
+                
+                // 4. THE MAGIC: Make the browser speak the answer out loud!
+                const utterance = new SpeechSynthesisUtterance(aiReply);
+                utterance.rate = 1.0; // Speed of the voice
+                utterance.pitch = 1.1; // Slightly higher pitch
+                window.speechSynthesis.speak(utterance);
+                
+                // Hide the transcript box after 8 seconds
+                setTimeout(() => { 
+                    document.getElementById('voice-transcript').classList.add('opacity-0', 'translate-y-2'); 
+                }, 8000);
+
+            } catch (e) {
+                console.error(e);
+                document.getElementById('voice-transcript').innerText = "⚠️ Communication link with the Mainframe failed.";
+            }
+        }
+
+        // --- 🌍 PHYSICS & MATH ---
+        async function fetchGermanWeather() { 
+            try { 
+                const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=52.12&longitude=11.62&current=temperature_2m,cloud_cover,is_day&timezone=Europe%2FBerlin'); 
+                const data = await res.json(); 
+                outsideTemp = data.current.temperature_2m;
+                document.getElementById('env-temp-out').innerText = outsideTemp + '°C'; 
+                liveCloudCover = data.current.cloud_cover; 
+                const aqiRes = await fetch('https://air-quality-api.open-meteo.com/v1/air-quality?latitude=52.12&longitude=11.62&current=us_aqi');
+                const aqiData = await aqiRes.json();
+                if(aqiData && aqiData.current) { outsideAQI = aqiData.current.us_aqi; }
+                calculateEnergy(); 
+            } catch (e) {} 
+        }
+        fetchGermanWeather(); setInterval(fetchGermanWeather, 300000);
+
+        function simulateEnvironment() {
+            let targetTemp = outsideTemp > 24 ? (outsideTemp + 24) / 2 : 24; 
+            
+            // Adjust for Heat or AC
+            if (acPower || acBedPower || heaterStates.living || heaterStates.kitchen || heaterStates.bedroom) {
+                let activeTemps = [];
+                if (acPower) activeTemps.push(tempLiving);
+                if (acBedPower) activeTemps.push(tempBed);
+                if (heaterStates.living || heaterStates.kitchen || heaterStates.bedroom) activeTemps.push(28); // Heaters pull temp up to 28C
+                
+                targetTemp = activeTemps.reduce((a, b) => a + b, 0) / activeTemps.length;
+            }
+
+            if (curtainStates.living || curtainStates.kitchen || curtainStates.bedroom) targetTemp = (targetTemp + outsideTemp) / 2; 
+
+            if (indoorTemp < targetTemp - 0.05) indoorTemp += 0.05;
+            else if (indoorTemp > targetTemp + 0.05) indoorTemp -= 0.05;
+            document.getElementById('env-temp-in').innerText = indoorTemp.toFixed(1) + '°C';
+
+            let targetAQI = outsideAQI > 30 ? outsideAQI - 10 : 30; 
+            if (purifierPower) targetAQI = 15; 
+            if (curtainStates.living || curtainStates.kitchen || curtainStates.bedroom) targetAQI = outsideAQI; 
+
+            if (indoorAQI < targetAQI - 0.5) indoorAQI += 0.5;
+            else if (indoorAQI > targetAQI + 0.5) indoorAQI -= 0.5;
+
+            const inAqiEl = document.getElementById('env-aqi-in');
+            inAqiEl.innerText = Math.round(indoorAQI);
+            inAqiEl.className = indoorAQI <= 50 ? 'text-green-400' : (indoorAQI <= 100 ? 'text-yellow-400' : 'text-rose-500');
+
+            const outAqiEl = document.getElementById('env-aqi-out');
+            outAqiEl.innerText = Math.round(outsideAQI);
+            outAqiEl.className = outsideAQI <= 50 ? 'text-green-400' : (outsideAQI <= 100 ? 'text-yellow-400' : 'text-rose-500');
+        }
+
+        function calculateEnergy() {
+            const WATT_LIGHT = 25; const WATT_MASTER_FAN = 15; const WATT_PURIFIER = 45; const WATT_STANDBY = 15; const WATT_TV = 150; const WATT_LED = 20; const WATT_HEATER = 2000;
+            
+            let drawCompressor = acPower ? (800 + ((30 - tempLiving) * 120)) : 0; let drawCompressorBed = acBedPower ? (600 + ((30 - tempBed) * 80)) : 0; 
+            let drawACFan = (acPower ? 40 : 0) + (acBedPower ? 40 : 0); 
+            let drawCeilingFan = currentFanSpeed * WATT_MASTER_FAN; let drawPurifier = purifierPower ? WATT_PURIFIER : 0;
+            let drawLights = (roomStates.living ? WATT_LIGHT : 0) + (roomStates.bedroom ? WATT_LIGHT : 0) + (roomStates.kitchen ? WATT_LIGHT : 0) + (roomStates.bathroom ? WATT_LIGHT : 0);
+            let drawMedia = (tvPower ? WATT_TV : 0) + (movieLightPower ? WATT_LED : 0);
+            
+            // 🚨 Calculate total draw from all active heaters
+            let drawHeater = (heaterStates.living ? WATT_HEATER : 0) + (heaterStates.kitchen ? WATT_HEATER : 0) + (heaterStates.bedroom ? WATT_HEATER : 0);
+
+            // Add Heaters to total watts!
+            let totalWatts = drawCompressor + drawCompressorBed + drawACFan + drawCeilingFan + drawPurifier + drawMedia + drawLights + drawHeater + WATT_STANDBY;
+
+            const hour = new Date().getHours(); let solarYield = 0;
+            if (hour >= 6 && hour <= 19) { solarYield = Math.round(4500 * (1 - (Math.abs(13 - hour) / 7)) * (1 - (liveCloudCover / 100))); if (solarYield < 0) solarYield = 0; }
+
+            let gridPower = solarYield - totalWatts;
+            const gridEl = document.getElementById('grid-status-text');
+            if (gridPower > 0) { gridEl.innerText = "⚡ Exporting"; gridEl.className = "text-xl font-medium text-green-400"; } else if (gridPower < 0) { gridEl.innerText = "🔌 Importing"; gridEl.className = "text-xl font-medium text-orange-400"; } else { gridEl.innerText = "⚖️ Balanced"; gridEl.className = "text-xl font-medium text-gray-400"; }
+            document.getElementById('power-draw').innerText = totalWatts; document.getElementById('solar-yield').innerText = solarYield; document.getElementById('grid-power').innerText = Math.abs(gridPower);
+            
+            let pctAC = totalWatts === 0 ? 0 : Math.round(((drawCompressor + drawCompressorBed + drawACFan) / totalWatts) * 100); 
+            let pctHeater = totalWatts === 0 ? 0 : Math.round((drawHeater / totalWatts) * 100); 
+            let pctFans = totalWatts === 0 ? 0 : Math.round((drawCeilingFan / totalWatts) * 100); 
+            let pctPurifier = totalWatts === 0 ? 0 : Math.round((drawPurifier / totalWatts) * 100); 
+            let pctMedia = totalWatts === 0 ? 0 : Math.round((drawMedia / totalWatts) * 100); 
+            let pctLights = totalWatts === 0 ? 0 : Math.round((drawLights / totalWatts) * 100);
+            
+            document.getElementById('bar-ac').style.width = `${pctAC}%`; document.getElementById('pct-ac').innerText = pctAC; 
+            document.getElementById('bar-heater').style.width = `${pctHeater}%`; document.getElementById('pct-heater').innerText = pctHeater; 
+            document.getElementById('bar-fans').style.width = `${pctFans}%`; document.getElementById('pct-fans').innerText = pctFans; 
+            document.getElementById('bar-purifier').style.width = `${pctPurifier}%`; document.getElementById('pct-purifier').innerText = pctPurifier; 
+            document.getElementById('bar-media').style.width = `${pctMedia}%`; document.getElementById('pct-media').innerText = pctMedia; 
+            document.getElementById('bar-lights').style.width = `${pctLights}%`; document.getElementById('pct-lights').innerText = pctLights;
+        }
+
+        // --- MAP ANIMATIONS & CONTROLS ---
+        function adjustTempLiving(change) { tempLiving += change; if(tempLiving < 16) tempLiving = 16; if(tempLiving > 30) tempLiving = 30; document.getElementById('temp-living').innerText = tempLiving; if(acPower) calculateEnergy(); }
+        function adjustTempBed(change) { tempBed += change; if(tempBed < 16) tempBed = 16; if(tempBed > 30) tempBed = 30; document.getElementById('temp-bed').innerText = tempBed; if(acBedPower) calculateEnergy(); }
+        function updateFanSpeed(speed) { 
+            document.getElementById('fan-slider').value = speed; currentFanSpeed = speed; document.getElementById('status-fan1').innerText = "Speed: " + speed; 
+            const fanSvg = document.getElementById('visual-fan');
+            if (speed == 0) { fanSvg.classList.add('fan-stopped'); fanSvg.classList.remove('animate-fan', 'fan-on'); } 
+            else { fanSvg.classList.remove('fan-stopped'); fanSvg.classList.add('animate-fan', 'fan-on'); fanSvg.style.animationDuration = (2.5 - (speed * 0.4)) + "s"; } 
+            calculateEnergy(); 
+        }
+
+        // 🔥 NEW: Toggle Heater System
+        function toggleHeater(room, state) {
+            heaterStates[room] = state;
+            
+            // Cross-check Eco-Guard! If AC and Heater are on simultaneously in a zone, trigger warning.
+            if (room === 'living' && state && acPower) showEcoWarning("Eco-Guard: Living AC and Heater running simultaneously!");
+            if (room === 'bedroom' && state && acBedPower) showEcoWarning("Eco-Guard: Bedroom AC and Heater running simultaneously!");
+            
+            let suffix = room === 'bedroom' ? 'bed' : room;
+            const heaterEl = document.getElementById(`visual-heat-${suffix}`);
+            const wave1 = document.getElementById(`heat-wave-${suffix}-1`);
+            const wave2 = document.getElementById(`heat-wave-${suffix}-2`);
+            
+            if (state) {
+                heaterEl.classList.remove('device-off'); heaterEl.classList.add('heater-on');
+                wave1.classList.add('heat-wave-on'); wave2.classList.add('heat-wave-on');
+            } else {
+                heaterEl.classList.remove('heater-on'); heaterEl.classList.add('device-off');
+                wave1.classList.remove('heat-wave-on'); wave2.classList.remove('heat-wave-on');
+            }
+            sendAction(`heater_${room}`, state ? 'ON' : 'OFF'); calculateEnergy();
+        }
+
+        function toggleAC(state) { 
+            acPower = (state === 'ON'); 
+            if (acPower && (curtainStates.living || curtainStates.kitchen)) showEcoWarning("Living Area AC activated while windows are OPEN.");
+            if (acPower && heaterStates.living) showEcoWarning("Eco-Guard: Living AC and Heater running simultaneously!");
+            const acEl = document.getElementById('visual-ac'); const air1 = document.getElementById('ac-wave-1'); const air2 = document.getElementById('ac-wave-2'); const air3 = document.getElementById('ac-wave-3');
+            if (acPower) { acEl.classList.remove('device-off'); acEl.classList.add('ac-on'); air1.classList.add('air-wave-on'); air2.classList.add('air-wave-on'); air3.classList.add('air-wave-on'); } else { acEl.classList.remove('ac-on'); acEl.classList.add('device-off'); air1.classList.remove('air-wave-on'); air2.classList.remove('air-wave-on'); air3.classList.remove('air-wave-on'); }
+            sendAction('ac_living', state); calculateEnergy(); 
+        }
+
+        function toggleACBed(state) { 
+            acBedPower = (state === 'ON'); 
+            if (acBedPower && curtainStates.bedroom) showEcoWarning("Bedroom AC activated while window is OPEN.");
+            if (acBedPower && heaterStates.bedroom) showEcoWarning("Eco-Guard: Bedroom AC and Heater running simultaneously!");
+            const acEl = document.getElementById('visual-ac-bed'); const air1 = document.getElementById('ac-wave-bed-1'); const air2 = document.getElementById('ac-wave-bed-2'); const air3 = document.getElementById('ac-wave-bed-3');
+            if (acBedPower) { acEl.classList.remove('device-off'); acEl.classList.add('ac-on'); air1.classList.add('air-wave-on'); air2.classList.add('air-wave-on'); air3.classList.add('air-wave-on'); } else { acEl.classList.remove('ac-on'); acEl.classList.add('device-off'); air1.classList.remove('air-wave-on'); air2.classList.remove('air-wave-on'); air3.classList.remove('air-wave-on'); }
+            sendAction('ac_bed', state); calculateEnergy(); 
+        }
+
+        function operateCurtain(room, action) {
+            const isOpen = (action === 'OPEN'); 
+            if (isOpen) {
+                if ((room === 'living' || room === 'kitchen') && acPower) showEcoWarning("Window opened while Living Area AC is running!");
+                if (room === 'bedroom' && acBedPower) showEcoWarning("Window opened while Bedroom AC is running!");
+                if (purifierPower) showEcoWarning("Window opened while Air Purifier is running.");
+            }
+            curtainStates[room] = isOpen; sendAction(`curtain_${room}`, action);
+            
+            const toggleEl = document.getElementById(`toggle-curtain-${room}`); if(toggleEl) toggleEl.checked = isOpen;
+            const statusEl = document.getElementById(`status-curtain-${room}`); statusEl.innerText = isOpen ? 'Open' : 'Closed'; statusEl.className = isOpen ? 'text-xs text-yellow-400' : 'text-xs text-gray-500';
+            
+            const winEl = document.getElementById(`win-${room}`); const glassEl = document.getElementById(`glass-${room}`); const beamEl = document.getElementById(`beam-${room}`);
+            if (isOpen) { 
+                if(room === 'kitchen') winEl.classList.add('shade-h-open'); else winEl.classList.add('shade-v-open'); 
+                glassEl.classList.add('win-open'); beamEl.classList.add('sunbeam-on');
+            } else { 
+                if(room === 'kitchen') winEl.classList.remove('shade-h-open'); else winEl.classList.remove('shade-v-open');
+                glassEl.classList.remove('win-open'); beamEl.classList.remove('sunbeam-on');
+            }
+        }
+
+        function toggleTV() { tvPower = !tvPower; sendAction('living_tv', tvPower ? 'ON' : 'OFF'); const tvEl = document.getElementById('device-tv'); if(tvPower) { tvEl.classList.remove('device-off'); tvEl.classList.add('tv-on'); } else { tvEl.classList.remove('tv-on'); tvEl.classList.add('device-off'); } calculateEnergy(); }
+        function toggleMovieLight() { movieLightPower = !movieLightPower; sendAction('living_movie_light', movieLightPower ? 'ON' : 'OFF'); const lightEl = document.getElementById('device-movielight'); if(movieLightPower) { lightEl.classList.remove('device-off'); lightEl.classList.add('led-on'); } else { lightEl.classList.remove('led-on'); lightEl.classList.add('device-off'); } calculateEnergy(); }
+        function togglePurifier(isOn) { 
+            purifierPower = isOn; if (isOn && (curtainStates.living || curtainStates.kitchen || curtainStates.bedroom)) showEcoWarning("Air Purifier activated while windows are OPEN."); sendAction('purifier', isOn ? 'ON' : 'OFF');
+            const purCore = document.getElementById('purifier-core'); const rings = document.querySelectorAll('.pure-ring');
+            if (isOn) { purCore.classList.remove('device-off'); purCore.classList.add('purifier-on'); rings.forEach(r => r.classList.add('pure-ring-on')); } else { purCore.classList.remove('purifier-on'); purCore.classList.add('device-off'); rings.forEach(r => r.classList.remove('pure-ring-on')); }
+            calculateEnergy(); 
+        }
+
+        // --- SCENE STATE LOGIC ---
+        function updateSceneButtons() {
+            ['movie', 'night', 'away', 'morning'].forEach(s => {
+                const btn = document.getElementById(`btn-scene-${s}`); if (!btn) return;
+                if (currentActiveScene === s) { btn.classList.add('border-blue-500', 'bg-blue-500/20', 'shadow-[0_0_15px_rgba(59,130,246,0.3)]'); btn.classList.remove('border-white/10', 'bg-gray-900/60'); } 
+                else { btn.classList.remove('border-blue-500', 'bg-blue-500/20', 'shadow-[0_0_15px_rgba(59,130,246,0.3)]'); btn.classList.add('border-white/10', 'bg-gray-900/60'); }
+            });
+        }
+
+        function deactivateScene(scene) {
+            updateAmbientLighting(null);
+            if (scene === 'movie') { if(tvPower) toggleTV(); if(movieLightPower) toggleMovieLight(); document.getElementById('ac-power-toggle').checked = false; toggleAC('OFF'); updateFanSpeed(0); }
+            else if (scene === 'night') { document.getElementById('ac-bed-toggle').checked = false; toggleACBed('OFF'); updateFanSpeed(0); if(roomStates.bedroom) toggleRoom('bedroom'); }
+            else if (scene === 'morning') { document.getElementById('toggle-curtain-living').checked = false; operateCurtain('living', 'CLOSE'); document.getElementById('toggle-curtain-kitchen').checked = false; operateCurtain('kitchen', 'CLOSE'); document.getElementById('toggle-curtain-bedroom').checked = false; operateCurtain('bedroom', 'CLOSE'); }
+        }
+
+        function activateScene(scene) {
+            if (currentActiveScene === scene) { deactivateScene(scene); currentActiveScene = null; updateSceneButtons(); return; }
+            currentActiveScene = scene; updateSceneButtons(); updateAmbientLighting(scene);
+
+            if (scene === 'movie') { 
+                if(roomStates.living) toggleRoom('living'); 
+                if(!tvPower) toggleTV(); if(!movieLightPower) toggleMovieLight();
+                document.getElementById('toggle-curtain-living').checked = false; operateCurtain('living', 'CLOSE'); document.getElementById('toggle-curtain-kitchen').checked = false; operateCurtain('kitchen', 'CLOSE'); document.getElementById('toggle-curtain-bedroom').checked = false; operateCurtain('bedroom', 'CLOSE');
+                
+                tempLiving = 21; document.getElementById('temp-living').innerText = tempLiving;
+                updateFanSpeed(1); document.getElementById('ac-power-toggle').checked = true; toggleAC('ON'); document.getElementById('ac-bed-toggle').checked = false; toggleACBed('OFF'); 
+            } 
+            else if (scene === 'away') { 
+                ['living', 'bedroom', 'kitchen', 'bathroom'].forEach(r => { if(roomStates[r]) toggleRoom(r); }); 
+                document.getElementById('toggle-curtain-living').checked = false; operateCurtain('living', 'CLOSE'); document.getElementById('toggle-curtain-kitchen').checked = false; operateCurtain('kitchen', 'CLOSE'); document.getElementById('toggle-curtain-bedroom').checked = false; operateCurtain('bedroom', 'CLOSE');
+                if(tvPower) toggleTV(); if(movieLightPower) toggleMovieLight(); updateFanSpeed(0); document.getElementById('ac-power-toggle').checked = false; toggleAC('OFF'); document.getElementById('ac-bed-toggle').checked = false; toggleACBed('OFF'); document.getElementById('purifier-toggle').checked = false; togglePurifier(false); 
+                
+                // Turn off heaters
+                ['living', 'kitchen', 'bedroom'].forEach(r => { if(heaterStates[r]) { document.getElementById(`heater-${r}-toggle`).checked = false; toggleHeater(r, false); } });
+            }
+            else if (scene === 'morning') {
+                ['living', 'bedroom', 'kitchen', 'bathroom'].forEach(r => { if(roomStates[r]) toggleRoom(r); }); 
+                document.getElementById('toggle-curtain-living').checked = true; operateCurtain('living', 'OPEN'); document.getElementById('toggle-curtain-kitchen').checked = true; operateCurtain('kitchen', 'OPEN'); document.getElementById('toggle-curtain-bedroom').checked = true; operateCurtain('bedroom', 'OPEN');
+                document.getElementById('ac-power-toggle').checked = false; toggleAC('OFF'); document.getElementById('ac-bed-toggle').checked = false; toggleACBed('OFF'); 
+            }
+            else if (scene === 'night') {
+                ['living', 'kitchen', 'bathroom'].forEach(r => { if(roomStates[r]) toggleRoom(r); }); if(!roomStates.bedroom) toggleRoom('bedroom');
+                if(tvPower) toggleTV(); if(movieLightPower) toggleMovieLight();
+                document.getElementById('toggle-curtain-living').checked = false; operateCurtain('living', 'CLOSE'); document.getElementById('toggle-curtain-kitchen').checked = false; operateCurtain('kitchen', 'CLOSE'); document.getElementById('toggle-curtain-bedroom').checked = false; operateCurtain('bedroom', 'CLOSE');
+                
+                tempBed = 24; document.getElementById('temp-bed').innerText = tempBed;
+                updateFanSpeed(0); document.getElementById('ac-power-toggle').checked = false; toggleAC('OFF'); document.getElementById('ac-bed-toggle').checked = true; toggleACBed('ON');    
+            }
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('energyChart').getContext('2d'); Chart.defaults.color = '#9ca3af';
+            let solarGradient = ctx.createLinearGradient(0, 0, 0, 300); solarGradient.addColorStop(0, 'rgba(250, 204, 21, 0.4)'); solarGradient.addColorStop(1, 'rgba(250, 204, 21, 0)');
+            let consumptionGradient = ctx.createLinearGradient(0, 0, 0, 300); consumptionGradient.addColorStop(0, 'rgba(6, 182, 212, 0.4)'); consumptionGradient.addColorStop(1, 'rgba(6, 182, 212, 0)');
+            new Chart(ctx, { type: 'line', data: { labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], datasets: [{ label: 'Solar', data: [14.2, 19.5, 12.1, 24.8, 28.3, 22.1, 18.9], borderColor: '#facc15', backgroundColor: solarGradient, fill: true, tension: 0.4 }, { label: 'Usage', data: [16.5, 15.2, 18.7, 14.1, 13.5, 25.4, 21.2], borderColor: '#06b6d4', backgroundColor: consumptionGradient, fill: true, tension: 0.4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins:{legend:{display:false}}, scales: { x: { grid: { color: 'rgba(255,255,255,0.05)' } }, y: { grid: { color: 'rgba(255,255,255,0.05)' } } } } });
+        }
+        window.onload = initChart;
+        
+// 🔥 MAIN ENGINE LOOP (Runs every 1000ms)
+        function updateEngine() { 
+            const now = new Date(); let hours = now.getHours(); let minutes = now.getMinutes(); document.getElementById('live-time').innerText = `${hours%12||12}:${minutes<10?'0'+minutes:minutes} ${hours>=12?'PM':'AM'}`; 
+            simulateEnvironment(); 
+            calculateEnergy();     
+        } 
+        setInterval(updateEngine, 1000); updateEngine();
+        
+        // 🎛️ UI HARDWARE CONTROLS
+        function sendAction(device, action) { console.log(`[Hardware Action] ${device} -> ${action}`); }
+        function toggleRoom(room) { roomStates[room] = !roomStates[room]; const isNowOn = roomStates[room]; const rect = document.getElementById('room-' + room); const label = document.getElementById('label-' + room); if (isNowOn) { rect.classList.add('room-on-' + room); label.classList.add('label-on'); } else { rect.classList.remove('room-on-' + room); label.classList.remove('label-on'); } calculateEnergy(); }
+
+        // ==========================================
+        // 🧠 CONNECTION TO PYTHON ML BACKEND
+        // ==========================================
+        async function fetchMLPredictions() {
+            try {
+                // 1. Fetch Occupancy Data
+                const occRes = await fetch('http://localhost:8000/predict/occupancy');
+                const occData = await occRes.json();
+                console.log("🤖 [ML BACKEND] Occupancy Probabilities:", occData.probabilities);
+                
+                // 🧠 NEW: AUTONOMOUS AI ROOM CONTROL
+                // We loop through the AI's predictions and physically update the UI
+                const aiPredictions = occData.probabilities;
+                
+               for (const [roomName, probability] of Object.entries(aiPredictions)) {
+                    // Check if the AI is highly confident (> 75%) that the room is occupied
+                    const isOccupied = probability > 0.75;
+                    
+                    // Update our internal state
+                    roomStates[roomName] = isOccupied;
+                    
+                    // Visually turn the room on or off based on the AI
+                    const rect = document.getElementById('room-' + roomName);
+                    const label = document.getElementById('label-' + roomName);
+                    
+                    if (rect && label) {
+                        if (isOccupied) {
+                            rect.classList.add('room-on-' + roomName);
+                            label.classList.add('label-on');
+                            // 🛠️ THE FIX: Use textContent for SVGs!
+                            if (!label.textContent.includes('🧠')) {
+                                label.textContent = label.textContent + ' 🧠';
+                            }
+                        } else {
+                            rect.classList.remove('room-on-' + roomName);
+                            label.classList.remove('label-on');
+                            label.textContent = label.textContent.replace(' 🧠', '');
+                        }
+                    }
+                
+                }
+                
+                // Recalculate the total house energy now that the AI has turned rooms on/off
+                calculateEnergy();
+                
+                // 2. Fetch Energy Forecast
+                const energyRes = await fetch('http://localhost:8000/forecast/energy?hours_ahead=6');
+                const energyData = await energyRes.json();
+                console.log("🤖 [ML BACKEND] Energy Forecast:", energyData.forecast);
+                
+                // 🎨 NEW: DRAW THE CHART.JS GRAPH
+                const forecastArray = energyData.forecast;
+                
+                // Extract times (e.g., "14:00") and watts for the graph
+                const labels = forecastArray.map(item => {
+                    const date = new Date(item.timestamp);
+                    return `${date.getHours()}:00`;
+                });
+                const watts = forecastArray.map(item => item.forecast_watts);
+
+                // If the chart already exists, just update the data smoothly
+                if (forecastChart) {
+                    forecastChart.data.labels = labels;
+                    forecastChart.data.datasets[0].data = watts;
+                    forecastChart.update();
+                } else {
+                    // If the chart doesn't exist yet, build it!
+                    const ctx = document.getElementById('forecastChart').getContext('2d');
+                    forecastChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Predicted Draw (Watts)',
+                                data: watts,
+                                borderColor: '#22d3ee', // Cyan color
+                                backgroundColor: 'rgba(34, 211, 238, 0.1)',
+                                borderWidth: 3,
+                                tension: 0.4, // Makes the line curvy
+                                fill: true,
+                                pointBackgroundColor: '#facc15', // Yellow dots
+                                pointRadius: 4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { labels: { color: '#9ca3af' } }
+                            },
+                            scales: {
+                                y: { 
+                                    beginAtZero: true, 
+                                    grid: { color: '#374151' },
+                                    ticks: { color: '#9ca3af' }
+                                },
+                                x: { 
+                                    grid: { display: false },
+                                    ticks: { color: '#9ca3af' }
+                                }
+                            }
+                        }
+                    });
+                }
+                
+                
+                // 3. Fetch Anomaly Detection (Eco-Guard)
+                // We grab the CURRENT total power draw of the house from your UI
+                const currentPowerText = document.getElementById('power-draw').innerText; 
+                const currentWatts = parseFloat(currentPowerText.replace('W', '').trim()) || 0;
+
+                const anomalyRes = await fetch(`http://localhost:8000/detect/anomalies?current_draw_watts=${currentWatts}`);
+                const anomalyData = await anomalyRes.json();
+                console.log("🚨 [ML BACKEND] Eco-Guard:", anomalyData);
+
+                const alertBanner = document.getElementById('eco-guard-alert');
+                const alertWattsText = document.getElementById('alert-watts');
+
+                // If the Isolation Forest AI flags this wattage as an anomaly...
+                if (anomalyData.is_anomaly) {
+                    alertBanner.classList.remove('hidden'); // Show the banner
+                    document.body.classList.add('shadow-[inset_0_0_100px_rgba(220,38,38,0.3)]'); // Flash the screen red!
+                    alertWattsText.innerText = currentWatts + " W";
+                } else {
+                    // House is operating normally
+                    alertBanner.classList.add('hidden');
+                    document.body.classList.remove('shadow-[inset_0_0_100px_rgba(220,38,38,0.3)]');
+                }
+
+            } 
+            catch (e) {
+                console.error("⚠️ Cannot connect to Python ML Backend. Is uvicorn running?", e);
+            }
+        }
+
+        // Production Mode: Update dashboard every 5 minutes
+            setTimeout(fetchMLPredictions, 2000); 
+            setInterval(fetchMLPredictions, 300000);
+
+    </script>
+</body>
+</html>
