@@ -17,7 +17,7 @@ app = FastAPI(
 )
 
 # Insert your real API key here!
-genai.configure(api_key="AIzaSyDcpawp9VgqWr6k4hSt1oNQDrLJwTxzT3Q")
+genai.configure(api_key="YOUR_ACTUAL_GEMINI_API_KEY")
 llm_model = genai.GenerativeModel('gemini-1.5-flash') # Fast, perfect for real-time voice
 
 # We define the shape of the data the frontend will send us
