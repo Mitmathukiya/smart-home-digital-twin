@@ -362,78 +362,92 @@
                 </div>
             </div>
 
-            <!-- 🌡️ Zoned Climate System Panel -->
-            <div id="card-ac1" class="bg-gray-900/40 backdrop-blur-xl rounded-2xl p-6 border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] transition-all duration-300 flex-1">
+           <!-- 🌡️ Zoned Climate System Panel -->
+            <div id="card-ac1" class="bg-gray-900/40 backdrop-blur-xl rounded-2xl p-6 border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] transition-all duration-300 h-fit">
                 <div class="flex justify-between items-center mb-4"><h2 class="text-lg font-bold text-gray-100">Climate Zones</h2></div>
-                <div class="bg-gray-800/40 rounded-xl p-4 mb-4 border border-white/5 flex flex-col space-y-4">
-                    <div class="flex justify-between items-center">
-                        <div class="flex items-center space-x-4">
-                            <span class="text-sm font-medium text-gray-200 w-20">Living AC</span>
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="ac-power-toggle" class="sr-only peer" onchange="toggleAC(this.checked ? 'ON' : 'OFF')">
-                                <div class="w-10 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-500 shadow-inner"></div>
-                            </label>
-                        </div>
-                        <div class="flex items-center space-x-2 bg-gray-900/50 p-1 rounded-lg border border-white/5">
-                            <button onclick="adjustTempLiving(-1)" class="w-6 h-6 rounded bg-gray-700 hover:bg-gray-600 flex items-center justify-center text-sm font-bold transition shadow-sm">-</button>
-                            <div class="text-sm font-light w-8 text-center text-gray-100"><span id="temp-living">22</span>°</div>
-                            <button onclick="adjustTempLiving(1)" class="w-6 h-6 rounded bg-gray-700 hover:bg-gray-600 flex items-center justify-center text-sm font-bold transition shadow-sm">+</button>
-                        </div>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <div class="flex items-center space-x-4">
-                            <span class="text-sm font-medium text-gray-200 w-20">Bed AC</span>
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="ac-bed-toggle" class="sr-only peer" onchange="toggleACBed(this.checked ? 'ON' : 'OFF')">
-                                <div class="w-10 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-500 shadow-inner"></div>
-                            </label>
-                        </div>
-                        <div class="flex items-center space-x-2 bg-gray-900/50 p-1 rounded-lg border border-white/5">
-                            <button onclick="adjustTempBed(-1)" class="w-6 h-6 rounded bg-gray-700 hover:bg-gray-600 flex items-center justify-center text-sm font-bold transition shadow-sm">-</button>
-                            <div class="text-sm font-light w-8 text-center text-gray-100"><span id="temp-bed">22</span>°</div>
-                            <button onclick="adjustTempBed(1)" class="w-6 h-6 rounded bg-gray-700 hover:bg-gray-600 flex items-center justify-center text-sm font-bold transition shadow-sm">+</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 🔥 NEW: SPACE HEATERS SECTION -->
-                <div class="bg-gray-800/40 rounded-xl p-4 mb-6 border border-white/5 flex flex-col space-y-3">
-                    <p class="text-[10px] text-red-400 uppercase tracking-widest font-bold mb-1 border-b border-white/10 pb-2">♨️ Space Heaters (2kW)</p>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm font-medium text-gray-200">Living Room</span>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="heater-living-toggle" class="sr-only peer" onchange="toggleHeater('living', this.checked)">
-                            <div class="w-10 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-red-500 shadow-inner"></div>
-                        </label>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm font-medium text-gray-200">Kitchen</span>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="heater-kitchen-toggle" class="sr-only peer" onchange="toggleHeater('kitchen', this.checked)">
-                            <div class="w-10 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-red-500 shadow-inner"></div>
-                        </label>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm font-medium text-gray-200">Master Bed</span>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="heater-bed-toggle" class="sr-only peer" onchange="toggleHeater('bedroom', this.checked)">
-                            <div class="w-10 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-red-500 shadow-inner"></div>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="flex justify-between items-center mb-1"><p class="text-xs text-blue-400 uppercase font-semibold">Ceiling Fan</p><p id="status-fan1" class="text-xs text-gray-400 font-mono bg-gray-800/50 px-2 py-0.5 rounded">Speed: 0</p></div>
-                <input type="range" min="0" max="5" value="0" id="fan-slider" class="w-full cursor-pointer ac-slider mb-6" onchange="updateFanSpeed(this.value)">
                 
-                <div class="flex items-center justify-between bg-gray-800/40 rounded-lg p-3 border border-white/5 mt-2 shadow-inner">
-                    <div class="flex items-center space-x-2"><svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg><span class="text-sm font-medium text-gray-200">Air Purifier</span></div>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="purifier-toggle" class="sr-only peer" onchange="togglePurifier(this.checked)">
-                        <div class="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500 shadow-inner"></div>
-                    </label>
-                </div>
+                <!-- UNIFIED WRAPPER: This ensures equal spacing between all 4 boxes -->
+                <div class="flex flex-col space-y-4">
+                    
+                    <!-- 1. AC SECTION -->
+                    <div class="bg-gray-800/40 rounded-xl p-4 border border-white/5 flex flex-col space-y-4">
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center space-x-4">
+                                <span class="text-sm font-medium text-gray-200 w-20">Living AC</span>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="ac-power-toggle" class="sr-only peer" onchange="toggleAC(this.checked ? 'ON' : 'OFF')">
+                                    <div class="w-10 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-500 shadow-inner"></div>
+                                </label>
+                            </div>
+                            <div class="flex items-center space-x-2 bg-gray-900/50 p-1 rounded-lg border border-white/5">
+                                <button onclick="adjustTempLiving(-1)" class="w-6 h-6 rounded bg-gray-700 hover:bg-gray-600 flex items-center justify-center text-sm font-bold transition shadow-sm">-</button>
+                                <div class="text-sm font-light w-8 text-center text-gray-100"><span id="temp-living">22</span>°</div>
+                                <button onclick="adjustTempLiving(1)" class="w-6 h-6 rounded bg-gray-700 hover:bg-gray-600 flex items-center justify-center text-sm font-bold transition shadow-sm">+</button>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center space-x-4">
+                                <span class="text-sm font-medium text-gray-200 w-20">Bed AC</span>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="ac-bed-toggle" class="sr-only peer" onchange="toggleACBed(this.checked ? 'ON' : 'OFF')">
+                                    <div class="w-10 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-500 shadow-inner"></div>
+                                </label>
+                            </div>
+                            <div class="flex items-center space-x-2 bg-gray-900/50 p-1 rounded-lg border border-white/5">
+                                <button onclick="adjustTempBed(-1)" class="w-6 h-6 rounded bg-gray-700 hover:bg-gray-600 flex items-center justify-center text-sm font-bold transition shadow-sm">-</button>
+                                <div class="text-sm font-light w-8 text-center text-gray-100"><span id="temp-bed">22</span>°</div>
+                                <button onclick="adjustTempBed(1)" class="w-6 h-6 rounded bg-gray-700 hover:bg-gray-600 flex items-center justify-center text-sm font-bold transition shadow-sm">+</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. SPACE HEATERS SECTION -->
+                    <div class="bg-gray-800/40 rounded-xl p-4 border border-white/5 flex flex-col space-y-3">
+                        <p class="text-[10px] text-red-400 uppercase tracking-widest font-bold mb-1 border-b border-white/10 pb-2">♨️ Space Heaters (2kW)</p>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-medium text-gray-200">Living Room</span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="heater-living-toggle" class="sr-only peer" onchange="toggleHeater('living', this.checked)">
+                                <div class="w-10 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-red-500 shadow-inner"></div>
+                            </label>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-medium text-gray-200">Kitchen</span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="heater-kitchen-toggle" class="sr-only peer" onchange="toggleHeater('kitchen', this.checked)">
+                                <div class="w-10 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-red-500 shadow-inner"></div>
+                            </label>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-medium text-gray-200">Master Bed</span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="heater-bed-toggle" class="sr-only peer" onchange="toggleHeater('bedroom', this.checked)">
+                                <div class="w-10 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-red-500 shadow-inner"></div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 3. AIR PURIFIER SECTION -->
+                    <div class="bg-gray-800/40 rounded-xl p-4 border border-white/5 flex items-center justify-between shadow-inner">
+                        <div class="flex items-center space-x-2"><svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg><span class="text-sm font-medium text-gray-200">Air Purifier</span></div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="purifier-toggle" class="sr-only peer" onchange="togglePurifier(this.checked)">
+                            <div class="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500 shadow-inner"></div>
+                        </label>
+                    </div>
+
+                    <!-- 4. CEILING FAN SECTION (Fixed layout!) -->
+                    <div class="bg-gray-800/40 rounded-xl p-4 border border-white/5 flex flex-col space-y-3 shadow-inner">
+                        <div class="flex justify-between items-center">
+                            <p class="text-xs text-blue-400 uppercase font-semibold">Ceiling Fan</p>
+                            <p id="status-fan1" class="text-xs text-gray-400 font-mono bg-gray-800/50 px-2 py-0.5 rounded border border-white/5">Speed: 0</p>
+                        </div>
+                        <input type="range" min="0" max="5" value="0" id="fan-slider" class="w-full cursor-pointer ac-slider mt-1" onchange="updateFanSpeed(this.value)">
+                    </div>
+
+                </div> <!-- End Unified Wrapper -->
             </div>
-        </div>
+
     </div>
 
     <!-- --- APP LOGIC --- -->
