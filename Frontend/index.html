@@ -104,10 +104,19 @@
         </div>
     </div>
 
-    <!-- 🎙️ VOICE ASSISTANT -->
-    <div class="fixed bottom-8 right-8 z-50 flex flex-col items-end space-y-3">
-        <div id="voice-transcript" class="bg-gray-800 text-gray-200 px-5 py-3 rounded-2xl text-sm shadow-xl border border-gray-700 opacity-0 transition-all duration-300 pointer-events-none transform translate-y-2 font-medium">Listening...</div>
-        <button id="mic-btn" onclick="toggleVoiceAssistant()" class="relative w-16 h-16 bg-gray-800/90 hover:bg-gray-700 backdrop-blur-xl rounded-full shadow-2xl flex items-center justify-center transition-colors border border-white/10"><svg id="mic-icon" class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg></button>
+   <!-- 🎙️ VOICE & TEXT AI TERMINAL -->
+    <div class="fixed bottom-8 right-8 z-50 flex flex-col items-end space-y-3 w-80">
+        <div id="voice-transcript" class="bg-gray-800 text-gray-200 px-5 py-3 rounded-2xl text-sm shadow-xl border border-gray-700 opacity-0 transition-all duration-300 pointer-events-none transform translate-y-2 font-medium w-full text-right break-words">Listening...</div>
+        
+        <div class="flex items-center space-x-2 w-full">
+            <!-- ⌨️ NEW: Text Command Input -->
+            <input type="text" id="ai-command-input" placeholder="Type a command (e.g., 'Turn on the TV')" class="bg-gray-800/90 backdrop-blur-xl border border-white/10 text-white text-sm rounded-full px-5 py-3 w-full shadow-2xl focus:outline-none focus:border-blue-500 transition-colors" onkeypress="handleCommandEnter(event)">
+            
+            <!-- Existing Mic Button -->
+            <button id="mic-btn" onclick="toggleVoiceAssistant()" class="relative flex-shrink-0 w-12 h-12 bg-gray-800/90 hover:bg-gray-700 backdrop-blur-xl rounded-full shadow-2xl flex items-center justify-center transition-colors border border-white/10">
+                <svg id="mic-icon" class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+            </button>
+        </div>
     </div>
 
     <!-- 📈 CHART MODAL (EXPANDED VIEW) -->
@@ -166,6 +175,44 @@
                     <span class="bg-gray-800/50 px-2 py-1 rounded">Lgt: <span id="pct-lights" class="text-yellow-400">0</span>%</span>
                 </div>
             </div> <!-- End of Load Distribution Card -->
+
+            <!-- 💶 NEW: LIVE ECONOMICS ENGINE -->
+            <div class="bg-gray-900/40 backdrop-blur-xl border border-white/10 shadow-lg rounded-2xl p-5 mb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-sm text-gray-400 uppercase tracking-wide">Grid Economics</h3>
+                    <span class="text-[10px] bg-green-500/20 text-green-400 px-2 py-1 rounded-full border border-green-500/30 font-bold tracking-widest">LIVE €</span>
+                </div>
+                
+                <!-- Editable Tariffs -->
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div class="bg-gray-800/50 rounded-lg p-3 border border-gray-700 shadow-inner">
+                        <p class="text-[10px] text-gray-400 uppercase mb-1">Buy Rate (€/kWh)</p>
+                        <div class="flex items-center">
+                            <span class="text-gray-500 mr-1">€</span>
+                            <input type="number" id="rate-buy" value="0.35" step="0.01" class="bg-transparent w-full text-lg font-bold text-white outline-none" onchange="calculateEnergy()">
+                        </div>
+                    </div>
+                    <div class="bg-gray-800/50 rounded-lg p-3 border border-gray-700 shadow-inner">
+                        <p class="text-[10px] text-gray-400 uppercase mb-1">Sell Rate (€/kWh)</p>
+                        <div class="flex items-center">
+                            <span class="text-gray-500 mr-1">€</span>
+                            <input type="number" id="rate-sell" value="0.10" step="0.01" class="bg-transparent w-full text-lg font-bold text-yellow-400 outline-none" onchange="calculateEnergy()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Real-Time Metrics -->
+                <div class="flex flex-col space-y-2">
+                    <div class="flex justify-between items-end border-b border-white/5 pb-2">
+                        <span class="text-sm text-gray-400">Current Cost / Hour</span>
+                        <span id="cost-per-hour" class="text-2xl font-bold text-white font-mono">€0.00</span>
+                    </div>
+                    <div class="flex justify-between items-end pt-1">
+                        <span class="text-sm text-gray-400">Solar Savings / Hour</span>
+                        <span id="solar-savings-hour" class="text-lg font-bold text-green-400 font-mono">€0.00</span>
+                    </div>
+                </div>
+            </div>
 
             <!-- 📊 CLICKABLE SMALL CHART -->
             <div class="bg-gray-900/40 backdrop-blur-xl border border-white/10 shadow-lg rounded-2xl p-5 mt-auto cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:bg-gray-800/60" onclick="openChartModal()">
@@ -539,11 +586,17 @@
                     })
                 });
                 
-                const data = await res.json();
+               const data = await res.json();
                 const aiReply = data.reply;
+                const aiActions = data.actions; // 👈 NEW: Grab the actions array
                 
                 // 3. Display the answer on screen
                 document.getElementById('voice-transcript').innerText = `🤖 ${aiReply}`;
+
+                // 4. THE MAGIC: Execute the physical UI changes
+                if (aiActions) {
+                    executeAIActions(aiActions);
+                }
                 
                 // 4. THE MAGIC: Make the browser speak the answer out loud!
                 const utterance = new SpeechSynthesisUtterance(aiReply);
@@ -560,6 +613,55 @@
                 console.error(e);
                 document.getElementById('voice-transcript').innerText = "⚠️ Communication link with the Mainframe failed.";
             }
+        }
+
+        // ⌨️ Handle pressing 'Enter' in the text box
+        function handleCommandEnter(event) {
+            if (event.key === 'Enter') {
+                const inputEl = document.getElementById('ai-command-input');
+                const text = inputEl.value.trim();
+                if (text) {
+                    inputEl.value = ''; // Clear the box
+                    processVoiceCommand(text); // Send it to the exact same pipeline as voice!
+                }
+            }
+        }
+
+        // 🤖 NEW: THE ACTION EXECUTOR
+        // This takes a list of actions from Python and physically clicks the UI buttons!
+        function executeAIActions(actions) {
+            if (!actions || actions.length === 0) return;
+
+            console.log("🤖 AI Executing Actions:", actions);
+
+            actions.forEach(action => {
+                const device = action.device;
+                const state = action.state; // 'ON' or 'OFF'
+                const value = action.value; // e.g., 22 (for temp) or 3 (for fan speed)
+
+                if (device === 'ac_living') {
+                    document.getElementById('ac-power-toggle').checked = (state === 'ON');
+                    toggleAC(state);
+                } 
+                else if (device === 'ac_bed') {
+                    document.getElementById('ac-bed-toggle').checked = (state === 'ON');
+                    toggleACBed(state);
+                }
+                else if (device === 'purifier') {
+                    document.getElementById('purifier-toggle').checked = (state === 'ON');
+                    togglePurifier(state === 'ON');
+                }
+                else if (device === 'tv') {
+                    if ((state === 'ON' && !tvPower) || (state === 'OFF' && tvPower)) {
+                        toggleTV();
+                    }
+                }
+                else if (device === 'shades_living') {
+                    document.getElementById('toggle-curtain-living').checked = (state === 'OPEN');
+                    operateCurtain('living', state);
+                }
+                // Add more devices here as needed!
+            });
         }
 
         // --- 🌍 PHYSICS & MATH ---
@@ -636,6 +738,34 @@
             if (gridPower > 0) { gridEl.innerText = "⚡ Exporting"; gridEl.className = "text-xl font-medium text-green-400"; } else if (gridPower < 0) { gridEl.innerText = "🔌 Importing"; gridEl.className = "text-xl font-medium text-orange-400"; } else { gridEl.innerText = "⚖️ Balanced"; gridEl.className = "text-xl font-medium text-gray-400"; }
             document.getElementById('power-draw').innerText = totalWatts; document.getElementById('solar-yield').innerText = solarYield; document.getElementById('grid-power').innerText = Math.abs(gridPower);
             
+
+            // 💶 ---------------------------------------------
+            // NEW: LIVE ECONOMICS ENGINE MATH
+            // ---------------------------------------------
+            let buyRate = parseFloat(document.getElementById('rate-buy').value) || 0.35;
+            let sellRate = parseFloat(document.getElementById('rate-sell').value) || 0.10;
+            
+            let netWatts = Math.abs(gridPower);
+            let isExporting = gridPower > 0;
+            
+            const costHourEl = document.getElementById('cost-per-hour');
+            if (isExporting) {
+                // If we are sending power to the grid, we are making money!
+                let profitPerHour = (netWatts / 1000) * sellRate;
+                costHourEl.innerText = "+€" + profitPerHour.toFixed(2);
+                costHourEl.className = "text-2xl font-bold text-green-400 font-mono drop-shadow-[0_0_10px_rgba(74,222,128,0.5)]";
+            } else {
+                // If we are pulling from the grid, we are spending money.
+                let costPerHour = (netWatts / 1000) * buyRate;
+                costHourEl.innerText = "-€" + costPerHour.toFixed(2);
+                costHourEl.className = "text-2xl font-bold text-rose-500 font-mono drop-shadow-[0_0_10px_rgba(244,63,94,0.5)]";
+            }
+
+            // Calculate "Invisible" Savings (Money kept in your pocket because solar powered the house instead of the grid)
+            let usableSolar = Math.min(solarYield, totalWatts); 
+            let savingsPerHour = (usableSolar / 1000) * buyRate;
+            document.getElementById('solar-savings-hour').innerText = "+€" + savingsPerHour.toFixed(2);
+
             let pctAC = totalWatts === 0 ? 0 : Math.round(((drawCompressor + drawCompressorBed + drawACFan) / totalWatts) * 100); 
             let pctHeater = totalWatts === 0 ? 0 : Math.round((drawHeater / totalWatts) * 100); 
             let pctFans = totalWatts === 0 ? 0 : Math.round((drawCeilingFan / totalWatts) * 100); 
@@ -650,6 +780,7 @@
             document.getElementById('bar-media').style.width = `${pctMedia}%`; document.getElementById('pct-media').innerText = pctMedia; 
             document.getElementById('bar-lights').style.width = `${pctLights}%`; document.getElementById('pct-lights').innerText = pctLights;
         }
+
 
         // --- MAP ANIMATIONS & CONTROLS ---
         function adjustTempLiving(change) { tempLiving += change; if(tempLiving < 16) tempLiving = 16; if(tempLiving > 30) tempLiving = 30; document.getElementById('temp-living').innerText = tempLiving; if(acPower) calculateEnergy(); }

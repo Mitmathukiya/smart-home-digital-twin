@@ -1,3 +1,4 @@
+from click import prompt
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import datetime
@@ -8,7 +9,23 @@ import google.generativeai as genai
 from pydantic import BaseModel
 from datetime import datetime, timedelta
 import random
+import json
+from fastapi import Request
+import os
+from dotenv import load_dotenv
+import google.generativeai as genai
 
+# 1. Load the hidden variables from your .env file
+load_dotenv()
+
+# 2. Securely fetch the key from the environment
+api_key = os.getenv("GEMINI_API_KEY")
+if not api_key:
+    raise ValueError("🚨 API Key not found! Make sure you created a .env file.")
+
+# 3. Configure Gemini safely
+genai.configure(api_key=api_key)
+# model = genai.GenerativeModel('gemini-2.5-flash')
 # Initialize the ML Backend App
 app = FastAPI(
     title="Microgrid ML Hub",
@@ -16,44 +33,74 @@ app = FastAPI(
     version="1.0.0"    
 )
 
-# Insert your real API key here!
-genai.configure(api_key="AIzaSyDcpawp9VgqWr6k4hSt1oNQDrLJwTxzT3Q")
-llm_model = genai.GenerativeModel('gemini-1.5-flash') # Fast, perfect for real-time voice
+# # Insert your real API key here!
+# genai.configure(api_key="")
+# # 2. Call Gemini and FORCE it to return JSON
+# model = genai.GenerativeModel('gemini-pro') # Fast, perfect for real-time voice
+#     # response = model.generate_content(
+#     #         prompt,
+#     #         # Note: We remove the generation_config line because 1.0 Pro doesn't need it!
+#     #     )
 
 # We define the shape of the data the frontend will send us
 class ChatRequest(BaseModel):
     transcript: str
     house_state: dict
 
-# --- ROUTE 4: CONVERSATIONAL AI (LLM) ---
-@app.post("/chat")
-async def chat_with_house(request: ChatRequest):
-    """Feeds the live house state to an LLM to answer user questions."""
-    try:
-        # We inject the LIVE JSON data of your house into the AI's system prompt
-        prompt = f"""
-        You are the AI brain of a highly advanced smart home. You are helpful, concise, and slightly witty.
-        Your primary job is to answer the user's questions based on the CURRENT telemetry of the house.
-        
-        DO NOT use formatting like markdown, asterisks, or bold text, because your response will be read aloud by a Text-to-Speech engine. Keep answers under 3 sentences.
-        
-        LIVE HOUSE STATE:
-        {request.house_state}
-        
-        USER QUESTION: "{request.transcript}"
-        """
-        
-        # Ask Gemini!
-        response = llm_model.generate_content(prompt)
-        
-        # Clean up any accidental asterisks the LLM might generate
-        clean_text = response.text.replace('*', '')
-        
-        return {"status": "success", "reply": clean_text}
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/chat")
+async def chat_endpoint(request: Request):
+    """Handles Voice/Text Commands and returns physical actions for the UI."""
+    try:
+        data = await request.json()
+        transcript = data.get("transcript", "")
+        house_state = data.get("house_state", {})
+
+        # 1. The "System Prompt" - This is the brain of your Smart Home!
+        prompt = f"""
+        You are Jarvis, the highly intelligent AI brain of a Smart Home Microgrid.
+        
+        Current Live House State:
+        {json.dumps(house_state, indent=2)}
+
+        The user has given you a command. You must respond naturally, and if they ask to control a device, you must output the corresponding machine actions.
+
+        VALID DEVICES: 
+        'ac_living', 'ac_bed', 'purifier', 'tv', 'shades_living', 'shades_kitchen', 'shades_bedroom', 'heater_living', 'heater_kitchen', 'heater_bedroom'
+        
+        VALID STATES: 
+        'ON', 'OFF', 'OPEN', 'CLOSE'
+
+        You MUST respond ONLY with a valid JSON object matching this exact schema:
+        {{
+            "reply": "Your verbal response to the user. Keep it under 2 sentences.",
+            "actions": [
+                {{ "device": "device_name", "state": "ON_OR_OFF", "value": null }}
+            ]
+        }}
+        
+        User Command: "{transcript}"
+        """
+
+        # 2. Call Gemini and FORCE it to return JSON
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        
+        response = model.generate_content(
+            prompt,
+            # This config strictly locks Gemini into returning valid JSON format
+            generation_config={"response_mime_type": "application/json"}
+        )
+
+        # 3. Parse the JSON and send it back to the Frontend!
+        ai_response_data = json.loads(response.text)
+        return ai_response_data
+
+    except Exception as e:
+        print(f"Chat API Error: {e}")
+        return {
+            "reply": "I am sorry, my connection to the mainframe was interrupted.",
+            "actions": []
+        }
 
 app.add_middleware(
     CORSMiddleware,
