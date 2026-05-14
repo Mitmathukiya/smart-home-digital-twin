@@ -66,10 +66,10 @@ async def chat_endpoint(request: Request):
         The user has given you a command. You must respond naturally, and if they ask to control a device, you must output the corresponding machine actions.
 
         VALID DEVICES: 
-        'ac_living', 'ac_bed', 'purifier', 'tv', 'shades_living', 'shades_kitchen', 'shades_bedroom', 'heater_living', 'heater_kitchen', 'heater_bedroom'
-        
+        'ac_living', 'ac_bed', 'purifier', 'tv', 'shades_living', ..., 'smart_lock'
+
         VALID STATES: 
-        'ON', 'OFF', 'OPEN', 'CLOSE'
+        'ON', 'OFF', 'OPEN', 'CLOSE', 'LOCKED', 'UNLOCKED'
 
         You MUST respond ONLY with a valid JSON object matching this exact schema:
         {{
@@ -296,3 +296,14 @@ async def get_weekly_analytics():
         "usage_kwh": usage_kwh,
         "solar_kwh": solar_kwh
     }
+
+prompt = f"""
+        ... (existing prompt) ...
+
+        SAFETY PROTOCOLS:
+        1. If the user says they are going to SLEEP or it is NIGHT, you MUST include {{"device": "smart_lock", "state": "LOCKED"}} in the actions.
+        2. If the user says they are LEAVING or GOING OUT (Away Mode), you MUST include {{"device": "smart_lock", "state": "LOCKED"}} in the actions.
+        3. Never unlock the door unless explicitly asked to 'unlock' or 'open' the door.
+        
+        ... (rest of prompt) ...
+        """

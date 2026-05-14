@@ -1,26 +1,58 @@
 # 🏠 AI-Powered Smart Home Digital Twin
 
-A real-time, closed-loop cyber-physical system that uses Machine Learning to perceive, anticipate, and protect a simulated smart home environment. 
+A next-generation, high-performance Smart Home operating system. This project features a live spatial UI (SVG floorplan), real-time energy & economics tracking, and a text/voice AI Assistant powered by **Google Gemini 2.5 Flash** that translates natural language into physical hardware actions.
 
-## 🧠 Intelligence Architecture
+<!-- ![Smart Home Dashboard](https://img.shields.io/badge/Status-Active-brightgreen) ![Tech Stack](https://img.shields.io/badge/Stack-Tailwind%20%7C%20FastAPI%20%7C%20Gemini-blue) -->
 
-This project moves beyond standard static dashboards by integrating three distinct Machine Learning algorithms into a unified FastAPI backend:
+## ✨ Core Features
 
-1. **Predictive Analytics (Time-Series):** Uses **Prophet** to forecast the home's 6-hour energy draw and solar yield based on historical usage and live weather data.
-2. **Behavioral Classification:** Uses **XGBoost** to calculate real-time probabilities of human occupancy in different spatial zones, autonomously controlling lighting and climate systems.
-3. **Unsupervised Anomaly Detection:** Uses an **Isolation Forest** (The "Eco-Guard") to continuously monitor aggregate house load. It flags dangerous power spikes (e.g., running AC and Space Heaters simultaneously) and flashes a UI warning to prevent grid strain.
+### 🧠 The "Jarvis" AI Command Terminal
+*   **Natural Language Control:** Type or speak commands like *"I'm going to bed, turn off the TV and lock the doors."*
+*   **Structured AI Execution:** Uses Google Gemini 2.5 Flash via FastAPI to parse intent and return structured JSON actions to physically toggle UI elements.
+*   **Context Aware:** The AI reads the live state of the house (temperatures, active devices) before making decisions.
 
-## 🛠️ Tech Stack
+### 🗺️ Live Spatial Floorplan (Digital Twin)
+*   **Interactive SVG Map:** Clickable zones for the Living Room, Bedroom, Kitchen, and Bathroom.
+*   **Real-Time Animations:** Visual feedback for device states (e.g., animated blue waves for AC, pulsing orange glows for space heaters, spinning fan blades).
+*   **Smart Security Visuals:** A dynamic padlock icon on the main entrance that physically animates and changes color based on lock status.
 
-* **Backend:** Python, FastAPI, Uvicorn
-* **Machine Learning:** Scikit-Learn, XGBoost, Prophet, Pandas, NumPy
-* **Frontend:** HTML5, Tailwind CSS, Vanilla JavaScript, Chart.js
-* **Data Sources:** Open-Meteo API (Live Weather & AQI integration)
+### 💶 Real-Time Grid Economics Engine
+*   **Live Cost Tracking:** Calculates exactly how much money the home is spending (or earning) per hour.
+*   **Adjustable Tariffs:** Input your local Buy (€/kWh) and Solar Sell (€/kWh) rates to instantly update the dashboard math.
+*   **Solar Savings:** Tracks "invisible" money saved by routing solar power directly into the home.
 
-## 🚀 How to Run Locally
+### 🎬 Intelligent Scene Engine (Macros)
+Trigger massive environmental shifts with a single click or AI command:
+*   🌙 **Night Mode:** Secures the Smart Lock, powers down the TV, closes shades, and sets the bedroom AC to sleep temperature.
+*   🚶 **Away Mode:** Locks all doors, turns off all climate control, and powers down the house to save maximum energy.
+*   🍿 **Movie Mode:** Dims ambient lighting, turns on LED bias strips, powers the TV, and sets a cool 21°C environment.
+*   🌅 **Morning Mode:** Opens all motorized shades to let in natural light and restores standard house functions.
 
-### 1. Start the ML Brain (Backend)
-Navigate to the backend directory, activate your virtual environment, and start the server:
+### 📊 Advanced Data Analytics
+*   **Interactive Dashboards:** Built with Chart.js to track live Wattage, Solar Yield, and Load Distribution.
+*   **Expandable Modals:** Click on the 7-Day Analytics preview card to launch an immersive, full-screen data view.
+
+---
+
+## 🛠️ Technology Stack
+
+**Frontend (The Body)**
+*   HTML5 & CSS3
+*   Tailwind CSS (Dark Mode & Glassmorphism UI)
+*   Vanilla JavaScript (State management & DOM manipulation)
+*   Chart.js (Telemetry visualization)
+
+**Backend (The Brain)**
+*   Python 3.x
+*   FastAPI & Uvicorn (High-speed asynchronous API)
+*   Google Generative AI SDK (Gemini 2.5 Flash)
+*   `python-dotenv` (Enterprise-grade API key security)
+
+---
+
+## 🚀 Installation & Setup
+
+### 1. Backend Setup
+Navigate to the `backend` folder and install the required Python libraries:
 ```bash
-cd backend
-uvicorn main:app --reload
+pip install fastapi uvicorn google-generativeai python-dotenv

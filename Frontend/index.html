@@ -353,6 +353,19 @@
                         <circle cx="430" cy="180" r="8" fill="#1f2937" class="pointer-events-none" />
                     </g>
                     <text x="430" y="215" text-anchor="middle" class="room-label pointer-events-none" style="font-size: 10px;">AIRQ</text>
+                    <!-- 🔐 SMART LOCK VISUAL -->
+                    <!-- 🔐 SMART LOCK VISUAL (Top-Left Near TV/LED) -->
+                        <g id="visual-lock" class="cursor-pointer" onclick="toggleLock()">
+                            <!-- Background Plate -->
+                            <rect id="lock-bg" x="60" y="60" width="30" height="40" rx="5" class="fill-gray-800 stroke-gray-600 transition-all duration-500" stroke-width="2" />
+                            
+                            <!-- Lock Shackle -->
+                            <path id="lock-shackle" d="M67 65 V55 Q 75 45 83 55 V65" fill="none" stroke="#9ca3af" stroke-width="3" class="transition-all duration-500" />
+                            
+                            <!-- Lock Status Dot -->
+                            <circle id="lock-status-dot" cx="75" cy="80" r="4" class="fill-red-500 animate-pulse" />
+                        </g>
+                        <text id="label-lock" x="75" y="115" text-anchor="middle" class="room-label" style="font-size: 10px;">SECURE</text>
                 </svg>
             </div>
 
@@ -381,6 +394,26 @@
         <div class="lg:col-span-3 flex flex-col space-y-6">
             <h3 class="text-xs text-gray-400 uppercase tracking-widest font-semibold pl-1">Hardware Control</h3>
 
+            <!-- 🔐 SECURITY & ACCESS PANEL -->
+            <div id="card-security" class="bg-gray-900/40 backdrop-blur-xl rounded-2xl p-6 border border-white/10 shadow-lg mb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-bold text-gray-100">Security</h2>
+                    <span id="lock-badge" class="text-[10px] bg-red-500/20 text-red-400 px-2 py-1 rounded-full border border-red-500/30 font-bold uppercase">Locked</span>
+                </div>
+                
+                <div class="bg-gray-800/40 rounded-xl p-4 border border-white/5 flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div id="lock-icon-container" class="p-2 bg-red-500/10 rounded-lg">
+                            <svg id="lock-ui-svg" class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-white">Main Entrance</p>
+                            <p id="lock-status-text" class="text-xs text-gray-400">Locked via System</p>
+                        </div>
+                    </div>
+                    <button onclick="toggleLock()" id="lock-btn" class="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-lg transition-colors shadow-lg">UNLOCK</button>
+                </div>
+            </div>
             <!-- 🪟 Motorized Shades Panel -->
             <div id="card-shades" class="bg-gray-900/40 backdrop-blur-xl rounded-2xl p-6 border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] transition-all duration-300">
                 <h2 class="text-lg font-bold mb-4 text-gray-100">Motorized Shades</h2>
@@ -511,6 +544,7 @@
         let forecastChart = null;
         let globalWeeklyData = null; 
         let modalWeeklyChartInstance = null;
+        let isLocked = true;
         
         // 🌍 ENVIRONMENTAL PHYSICS
         let outsideTemp = 24.0; let indoorTemp = 22.4;
@@ -539,6 +573,49 @@
             else if (scene === 'away') { body.classList.replace('bg-gray-950', 'bg-black'); aura1.classList.add('bg-transparent', 'opacity-0'); aura2.classList.add('bg-transparent', 'opacity-0'); }
         }
 
+                function toggleLock(forceState = null) {
+            isLocked = (forceState !== null) ? (forceState === 'LOCKED') : !isLocked;
+            
+            const bg = document.getElementById('lock-bg');
+            const shackle = document.getElementById('lock-shackle');
+            const dot = document.getElementById('lock-status-dot');
+            const badge = document.getElementById('lock-badge');
+            const btn = document.getElementById('lock-btn');
+            const statusText = document.getElementById('lock-status-text');
+            const iconContainer = document.getElementById('lock-icon-container');
+            const uiSvg = document.getElementById('lock-ui-svg');
+
+            if (isLocked) {
+                // LOCKED STATE
+                shackle.setAttribute('d', 'M67 65 V55 Q 75 45 83 55 V65');
+                bg.classList.replace('stroke-green-500', 'stroke-gray-600');
+                dot.classList.replace('fill-green-500', 'fill-red-500');
+                badge.innerText = "Locked";
+                badge.className = "text-[10px] bg-red-500/20 text-red-400 px-2 py-1 rounded-full border border-red-500/30 font-bold uppercase";
+                btn.innerText = "UNLOCK";
+                btn.className = "px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-lg transition-colors shadow-lg";
+                // statusText.innerText = "Locked via System";
+                iconContainer.className = "p-2 bg-red-500/10 rounded-lg";
+                uiSvg.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>';
+                uiSvg.classList.replace('text-green-500', 'text-red-500');
+                statusText.innerText = "Secured by Scene Engine"; // Updated text
+                statusText.className = "text-xs text-cyan-400 font-medium"; // Give it a "smart" color
+            } else {
+                // UNLOCKED STATE
+                shackle.setAttribute('d', 'M67 65 V45 Q 75 35 83 45 V55');
+                bg.classList.replace('stroke-gray-600', 'stroke-green-500');
+                dot.classList.replace('fill-red-500', 'fill-green-500');
+                badge.innerText = "Unlocked";
+                badge.className = "text-[10px] bg-green-500/20 text-green-400 px-2 py-1 rounded-full border border-green-500/30 font-bold uppercase";
+                btn.innerText = "LOCK";
+                btn.className = "px-4 py-2 bg-green-600 hover:bg-green-500 text-white text-xs font-bold rounded-lg transition-colors shadow-lg";
+                statusText.innerText = "Unlocked by User";
+                iconContainer.className = "p-2 bg-green-500/10 rounded-lg";
+                uiSvg.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"></path>';
+                uiSvg.classList.replace('text-red-500', 'text-green-500');
+            }
+            sendAction('main_door_lock', isLocked ? 'LOCKED' : 'UNLOCKED');
+        }
         // 🎙️ VOICE AI
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition; let isListening = false;
@@ -659,6 +736,9 @@
                 else if (device === 'shades_living') {
                     document.getElementById('toggle-curtain-living').checked = (state === 'OPEN');
                     operateCurtain('living', state);
+                }
+                else if (device === 'smart_lock') {
+                    toggleLock(state === 'LOCKED' ? 'LOCKED' : 'UNLOCKED');
                 }
                 // Add more devices here as needed!
             });
@@ -894,11 +974,13 @@
                 updateFanSpeed(1); document.getElementById('ac-power-toggle').checked = true; toggleAC('ON'); document.getElementById('ac-bed-toggle').checked = false; toggleACBed('OFF'); 
             } 
             else if (scene === 'away') { 
+                // 🔐 SECURITY: Lock the door when leaving
+                toggleLock('LOCKED');
+
                 ['living', 'bedroom', 'kitchen', 'bathroom'].forEach(r => { if(roomStates[r]) toggleRoom(r); }); 
                 document.getElementById('toggle-curtain-living').checked = false; operateCurtain('living', 'CLOSE'); document.getElementById('toggle-curtain-kitchen').checked = false; operateCurtain('kitchen', 'CLOSE'); document.getElementById('toggle-curtain-bedroom').checked = false; operateCurtain('bedroom', 'CLOSE');
                 if(tvPower) toggleTV(); if(movieLightPower) toggleMovieLight(); updateFanSpeed(0); document.getElementById('ac-power-toggle').checked = false; toggleAC('OFF'); document.getElementById('ac-bed-toggle').checked = false; toggleACBed('OFF'); document.getElementById('purifier-toggle').checked = false; togglePurifier(false); 
                 
-                // Turn off heaters
                 ['living', 'kitchen', 'bedroom'].forEach(r => { if(heaterStates[r]) { document.getElementById(`heater-${r}-toggle`).checked = false; toggleHeater(r, false); } });
             }
             else if (scene === 'morning') {
@@ -907,6 +989,9 @@
                 document.getElementById('ac-power-toggle').checked = false; toggleAC('OFF'); document.getElementById('ac-bed-toggle').checked = false; toggleACBed('OFF'); 
             }
             else if (scene === 'night') {
+                // 🔐 SECURITY: Lock the door for sleep
+                toggleLock('LOCKED');
+
                 ['living', 'kitchen', 'bathroom'].forEach(r => { if(roomStates[r]) toggleRoom(r); }); if(!roomStates.bedroom) toggleRoom('bedroom');
                 if(tvPower) toggleTV(); if(movieLightPower) toggleMovieLight();
                 document.getElementById('toggle-curtain-living').checked = false; operateCurtain('living', 'CLOSE'); document.getElementById('toggle-curtain-kitchen').checked = false; operateCurtain('kitchen', 'CLOSE'); document.getElementById('toggle-curtain-bedroom').checked = false; operateCurtain('bedroom', 'CLOSE');
