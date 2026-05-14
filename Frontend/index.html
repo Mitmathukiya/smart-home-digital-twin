@@ -74,6 +74,7 @@
 
         @keyframes pulse-ring { 0% { transform: scale(0.8); opacity: 0.8; } 100% { transform: scale(1.8); opacity: 0; } }
         .mic-listening::before { content: ''; position: absolute; left: 0; top: 0; width: 100%; height: 100%; background-color: #3b82f6; border-radius: 50%; z-index: -1; animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite; }
+        
     </style>
 </head>
 <body id="main-body" class="bg-gray-950 text-white min-h-screen p-4 md:p-8 font-sans selection:bg-blue-500 relative pb-20 overflow-x-hidden transition-colors duration-1000 bg-microgrid">
@@ -109,6 +110,20 @@
         <button id="mic-btn" onclick="toggleVoiceAssistant()" class="relative w-16 h-16 bg-gray-800/90 hover:bg-gray-700 backdrop-blur-xl rounded-full shadow-2xl flex items-center justify-center transition-colors border border-white/10"><svg id="mic-icon" class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg></button>
     </div>
 
+    <!-- 📈 CHART MODAL (EXPANDED VIEW) -->
+    <div id="chart-modal" class="fixed inset-0 z-[200] hidden bg-gray-950/90 backdrop-blur-sm flex items-center justify-center p-4 sm:p-8 transition-opacity duration-300 opacity-0">
+        <div class="bg-gray-900 border border-white/10 shadow-2xl rounded-2xl w-full max-w-5xl h-[75vh] flex flex-col p-6 relative">
+            <button onclick="closeChartModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 p-2 rounded-full transition-colors z-10">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <h2 class="text-2xl font-bold text-white mb-6">📊 7-Day Energy Analytics (Expanded)</h2>
+            <div class="relative flex-1 w-full h-full">
+                <!-- This is where the big chart goes! -->
+                <canvas id="modalWeeklyEnergyChart"></canvas>
+            </div>
+        </div>
+    </div>
+
     <!-- HEADER -->
     <header class="mb-8 text-center max-w-[1400px] mx-auto flex items-center justify-between">
         <div class="text-left"><h1 class="text-3xl font-bold tracking-tight text-gray-100 drop-shadow-md">Microgrid Hub</h1><p class="text-gray-400 mt-1">Command Center UI</p></div>
@@ -123,11 +138,16 @@
         <!-- ========================================== -->
         <div class="lg:col-span-3 flex flex-col space-y-6">
             <h3 class="text-xs text-gray-400 uppercase tracking-widest font-semibold pl-1">Solar Engine</h3>
+            
             <div class="bg-gray-900/40 backdrop-blur-xl border border-white/10 shadow-lg rounded-2xl p-5"><p class="text-sm text-gray-400 uppercase tracking-wide mb-1">House Load</p><p class="text-3xl font-light text-white"><span id="power-draw">0</span><span class="text-base text-gray-500 ml-1">W</span></p></div>
+            
             <div class="bg-gray-900/40 backdrop-blur-xl border border-yellow-500/30 shadow-[inset_0_0_20px_rgba(250,204,21,0.05)] rounded-2xl p-5 relative overflow-hidden"><div class="absolute -top-10 -right-10 w-32 h-32 bg-yellow-500/20 blur-3xl rounded-full"></div><div class="relative z-10"><p class="text-sm text-yellow-500 uppercase tracking-wide mb-1 flex items-center"><svg class="w-4 h-4 mr-1 animate-spin-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>Solar Yield</p><p class="text-3xl font-light text-yellow-400"><span id="solar-yield">0</span><span class="text-base text-yellow-600 ml-1">W</span></p></div></div>
+            
             <div class="bg-gray-900/40 backdrop-blur-xl border border-white/10 shadow-lg rounded-2xl p-5 flex flex-col justify-center"><p class="text-sm text-gray-400 uppercase tracking-wide mb-1">Grid Exchange</p><div class="flex items-end space-x-2"><p class="text-2xl font-medium" id="grid-status-text">Calculating...</p><p class="text-sm text-gray-500 mb-1"><span id="grid-power">0</span> W</p></div></div>
+            
             <div class="bg-gray-900/40 backdrop-blur-xl border border-white/10 shadow-lg rounded-2xl p-5">
                 <p class="text-sm text-gray-400 uppercase tracking-wide mb-3">Load Distribution</p>
+                
                 <div class="w-full h-3 bg-gray-800 rounded-full flex overflow-hidden mb-3">
                     <div id="bar-ac" class="h-full bg-cyan-500 transition-all duration-700" style="width: 0%"></div>
                     <div id="bar-heater" class="h-full bg-red-500 transition-all duration-700" style="width: 0%"></div>
@@ -136,6 +156,7 @@
                     <div id="bar-media" class="h-full bg-purple-500 transition-all duration-700" style="width: 0%"></div>
                     <div id="bar-lights" class="h-full bg-yellow-400 transition-all duration-700" style="width: 0%"></div>
                 </div>
+                
                 <div class="flex flex-wrap gap-2 text-[10px] text-gray-400 font-mono">
                     <span class="bg-gray-800/50 px-2 py-1 rounded">AC: <span id="pct-ac" class="text-cyan-400">0</span>%</span>
                     <span class="bg-gray-800/50 px-2 py-1 rounded border border-red-500/30">Heat: <span id="pct-heater" class="text-red-400">0</span>%</span>
@@ -144,8 +165,20 @@
                     <span class="bg-gray-800/50 px-2 py-1 rounded">TV: <span id="pct-media" class="text-purple-400">0</span>%</span>
                     <span class="bg-gray-800/50 px-2 py-1 rounded">Lgt: <span id="pct-lights" class="text-yellow-400">0</span>%</span>
                 </div>
+            </div> <!-- End of Load Distribution Card -->
+
+            <!-- 📊 CLICKABLE SMALL CHART -->
+            <div class="bg-gray-900/40 backdrop-blur-xl border border-white/10 shadow-lg rounded-2xl p-5 mt-auto cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:bg-gray-800/60" onclick="openChartModal()">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-sm text-gray-400 uppercase tracking-wide">7-Day Analytics</h3>
+                    <span class="text-[10px] bg-gray-800 px-2 py-1 rounded text-gray-400 font-bold border border-gray-700">🔍 EXPAND</span>
+                </div>
+                <div class="relative h-56 w-full">
+                    <canvas id="weeklyEnergyChart"></canvas>
+                </div>
             </div>
-        </div>
+            
+        </div> <!-- End of COLUMN 1 -->
 
         <!-- ========================================== -->
         <!-- COLUMN 2: CENTER FOCUS (THE DIGITAL TWIN)  -->
@@ -291,11 +324,7 @@
                     </div>
             </div>
 
-            <!-- Analytics Chart -->
-            <div class="bg-gray-900/40 backdrop-blur-xl border border-white/10 shadow-lg rounded-2xl p-6">
-                <h2 class="text-sm font-bold mb-4 flex items-center text-gray-100"><svg class="w-4 h-4 mr-2 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>7-Day Energy Analytics (kWh)</h2>
-                <div class="w-full h-40 relative"><canvas id="energyChart"></canvas></div>
-            </div>
+            
 
         </div>
 
@@ -419,6 +448,8 @@
         let heaterStates = { living: false, kitchen: false, bedroom: false };
         let tvPower = false; let movieLightPower = false;
         let forecastChart = null;
+        let globalWeeklyData = null; 
+        let modalWeeklyChartInstance = null;
         
         // 🌍 ENVIRONMENTAL PHYSICS
         let outsideTemp = 24.0; let indoorTemp = 22.4;
@@ -740,13 +771,13 @@
             }
         }
 
-        function initChart() {
-            const ctx = document.getElementById('energyChart').getContext('2d'); Chart.defaults.color = '#9ca3af';
-            let solarGradient = ctx.createLinearGradient(0, 0, 0, 300); solarGradient.addColorStop(0, 'rgba(250, 204, 21, 0.4)'); solarGradient.addColorStop(1, 'rgba(250, 204, 21, 0)');
-            let consumptionGradient = ctx.createLinearGradient(0, 0, 0, 300); consumptionGradient.addColorStop(0, 'rgba(6, 182, 212, 0.4)'); consumptionGradient.addColorStop(1, 'rgba(6, 182, 212, 0)');
-            new Chart(ctx, { type: 'line', data: { labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], datasets: [{ label: 'Solar', data: [14.2, 19.5, 12.1, 24.8, 28.3, 22.1, 18.9], borderColor: '#facc15', backgroundColor: solarGradient, fill: true, tension: 0.4 }, { label: 'Usage', data: [16.5, 15.2, 18.7, 14.1, 13.5, 25.4, 21.2], borderColor: '#06b6d4', backgroundColor: consumptionGradient, fill: true, tension: 0.4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins:{legend:{display:false}}, scales: { x: { grid: { color: 'rgba(255,255,255,0.05)' } }, y: { grid: { color: 'rgba(255,255,255,0.05)' } } } } });
-        }
-        window.onload = initChart;
+        // function initChart() {
+        //     const ctx = document.getElementById('energyChart').getContext('2d'); Chart.defaults.color = '#9ca3af';
+        //     let solarGradient = ctx.createLinearGradient(0, 0, 0, 300); solarGradient.addColorStop(0, 'rgba(250, 204, 21, 0.4)'); solarGradient.addColorStop(1, 'rgba(250, 204, 21, 0)');
+        //     let consumptionGradient = ctx.createLinearGradient(0, 0, 0, 300); consumptionGradient.addColorStop(0, 'rgba(6, 182, 212, 0.4)'); consumptionGradient.addColorStop(1, 'rgba(6, 182, 212, 0)');
+        //     new Chart(ctx, { type: 'line', data: { labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], datasets: [{ label: 'Solar', data: [14.2, 19.5, 12.1, 24.8, 28.3, 22.1, 18.9], borderColor: '#facc15', backgroundColor: solarGradient, fill: true, tension: 0.4 }, { label: 'Usage', data: [16.5, 15.2, 18.7, 14.1, 13.5, 25.4, 21.2], borderColor: '#06b6d4', backgroundColor: consumptionGradient, fill: true, tension: 0.4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins:{legend:{display:false}}, scales: { x: { grid: { color: 'rgba(255,255,255,0.05)' } }, y: { grid: { color: 'rgba(255,255,255,0.05)' } } } } });
+        // }
+        // window.onload = initChart;
         
 // 🔥 MAIN ENGINE LOOP (Runs every 1000ms)
         function updateEngine() { 
@@ -899,6 +930,73 @@
             setTimeout(fetchMLPredictions, 2000); 
             setInterval(fetchMLPredictions, 300000);
 
+        // 🔥 NEW FEATURE: Weekly Analytics Chart
+
+               async function renderWeeklyAnalytics() {
+            try {
+                const response = await fetch('http://127.0.0.1:8000/api/analytics/7-day');
+                globalWeeklyData = await response.json(); // Save the data globally!
+
+                const ctx = document.getElementById('weeklyEnergyChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: globalWeeklyData.dates,
+                        datasets: [
+                            { label: 'Consumed', data: globalWeeklyData.usage_kwh, backgroundColor: 'rgba(56, 189, 248, 0.7)', borderRadius: 4 },
+                            { label: 'Solar', data: globalWeeklyData.solar_kwh, backgroundColor: 'rgba(251, 191, 36, 0.7)', borderRadius: 4 }
+                        ]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: false } } }
+                });
+            } catch (error) { console.error("Error loading analytics:", error); }
+        }
+
+        // --- MODAL LOGIC ---
+        function openChartModal() {
+            const modal = document.getElementById('chart-modal');
+            modal.classList.remove('hidden');
+            setTimeout(() => modal.classList.remove('opacity-0'), 10); // Smooth fade in
+
+            if (!globalWeeklyData) return;
+
+            const ctxModal = document.getElementById('modalWeeklyEnergyChart').getContext('2d');
+            
+            // Destroy the old big chart if it exists so they don't overlap
+            if (modalWeeklyChartInstance) modalWeeklyChartInstance.destroy();
+
+            // Draw the massive, detailed version!
+            modalWeeklyChartInstance = new Chart(ctxModal, {
+                type: 'bar',
+                data: {
+                    labels: globalWeeklyData.dates,
+                    datasets: [
+                        { label: 'Consumed (kWh)', data: globalWeeklyData.usage_kwh, backgroundColor: 'rgba(56, 189, 248, 0.7)', borderColor: 'rgba(56, 189, 248, 1)', borderWidth: 1, borderRadius: 6 },
+                        { label: 'Solar Generated (kWh)', data: globalWeeklyData.solar_kwh, backgroundColor: 'rgba(251, 191, 36, 0.7)', borderColor: 'rgba(251, 191, 36, 1)', borderWidth: 1, borderRadius: 6 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false, // Forces it to fill the tall popup screen
+                    plugins: {
+                        legend: { labels: { color: 'white', font: { size: 16 } } }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'gray', font: { size: 14 } } },
+                        x: { grid: { display: false }, ticks: { color: 'gray', font: { size: 14 } } }
+                    }
+                }
+            });
+        }
+
+        function closeChartModal() {
+            const modal = document.getElementById('chart-modal');
+            modal.classList.add('opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 300); // Wait for fade out
+        }
+
+        // START IT UP!
+        renderWeeklyAnalytics();
     </script>
 </body>
 </html>

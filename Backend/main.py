@@ -6,6 +6,9 @@ import pandas as pd
 import requests
 import google.generativeai as genai
 from pydantic import BaseModel
+from datetime import datetime, timedelta
+import random
+
 # Initialize the ML Backend App
 app = FastAPI(
     title="Microgrid ML Hub",
@@ -105,7 +108,7 @@ async def predict_occupancy():
 
     try:
         # 1. Get the current time features
-        now = datetime.datetime.now()
+        now = datetime.now()
         hour = now.hour
         day_of_week = now.weekday()
         is_weekend = 1 if day_of_week >= 5 else 0
@@ -225,3 +228,24 @@ async def detect_anomalies(current_draw_watts: float):
         raise HTTPException(status_code=500, detail=str(e))
 async def health_check():
     return {"status": "ok", "models_loaded": models["prophet_energy"] is not None}
+
+
+@app.get("/api/analytics/7-day")
+async def get_weekly_analytics():
+    """Returns energy consumption and solar yield (kWh) for the last 7 days."""
+    
+    # Generate the dates for the last 7 days
+    today = datetime.now()
+    dates = [(today - timedelta(days=i)).strftime("%a") for i in range(6, -1, -1)]
+    
+    # Synthetic daily usage (between 12 kWh and 35 kWh)
+    usage_kwh = [round(random.uniform(12.0, 35.0), 1) for _ in range(7)]
+    
+    # Synthetic daily solar yield (between 8 kWh and 28 kWh - assuming a decent solar setup!)
+    solar_kwh = [round(random.uniform(8.0, 28.0), 1) for _ in range(7)]
+    
+    return {
+        "dates": dates,
+        "usage_kwh": usage_kwh,
+        "solar_kwh": solar_kwh
+    }
